@@ -18,6 +18,8 @@ from data.data_wizard import data_wizard
 # Utils
 from utils import *
 import csv
+# Customized optimizers
+from optimizers.ftrl import FTRL
 
 """ Parse experiment indexes """
 parser = argparse.ArgumentParser(description='T-model training framework')
@@ -73,7 +75,12 @@ def get_pytorch_obj():
             lr=config['LR'],
             weight_decay=weight_decay
         ) \
-            if config['OPT']=="adamw" else \
+        if config['OPT']=="adamw" else \
+        FTRL(
+            params=param_group,
+            alpha=config['ALPHA']
+        ) \
+        if config['OPT']=="ftrl" else \
         opt.SGD(
             params=param_group,
             lr=config['LR'],

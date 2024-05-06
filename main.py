@@ -49,6 +49,10 @@ def main():
             process_list.append(
                 subprocess.Popen(['python', '-u', './normal_training.py', '-idx', str(idx), '-root', root_folder])
                 )
+        elif config_dict["TRAINING_TYPE"]=='ol_ftrl':
+            process_list.append(
+                subprocess.Popen(['python', '-u', './normal_training.py', '-idx', str(idx), '-root', root_folder])
+                )
         else:
             raise NotImplementedError
 if __name__ == "__main__":
