@@ -18,8 +18,6 @@ from data.data_wizard import data_wizard
 # Utils
 from utils import *
 import csv
-# Customized optimizers
-from optimizers.ftrl import FTRL
 
 """ Parse experiment indexes """
 parser = argparse.ArgumentParser(description='T-model training framework')
@@ -65,13 +63,9 @@ def get_pytorch_obj():
         bit_w=config['W_BIT'] if 'W_BIT' in config.keys() else 32,
         bit_a=config['A_BIT'] if 'A_BIT' in config.keys() else 32,
         version=config['MODEL_VER'],
-        device=DEVICE
+        device=DEVICE,
+        online=False
     ).to(DEVICE)
-    # Set the hyper parameter of the online CNN
-    model.set_hyper_params(
-        beta=config['BETA'],
-        s=config['SMOOTH_FACTOR']
-    )
     # Setting up parameter groups and weight decay
     weight_decay = config['WEIGHT_DECAY'] if 'WEIGHT_DECAY' in config.keys() else 0.0
     param_group = get_para_group(model, weight_decay) if weight_decay!=0 else model.parameters()
@@ -80,11 +74,6 @@ def get_pytorch_obj():
             params=param_group,
             lr=config['LR'],
             weight_decay=weight_decay
-        ) \
-        if config['OPT']=="adamw" else \
-        FTRL(
-            params=param_group,
-            alpha=config['ALPHA']
         ) \
         if config['OPT']=="ftrl" else \
         opt.SGD(
@@ -172,7 +161,12 @@ def main():
             total_count += 1
             # Classic pytorch pipeline
             with torch.autograd.set_detect_anomaly(True):
-                loss, y = model.step(images.to(DEVICE), labels.to(DEVICE), optimizer)
+                model.train()
+                optimizer.zero_grad()
+                y = model(images.to(DEVICE))
+                loss = F.cross_entropy(y,labels.to(DEVICE))
+                loss.backward()
+                optimizer.step()
             # Append loss
             loss_accumulated += loss.item()
             loss_list.append([

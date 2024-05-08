@@ -5,6 +5,7 @@ from models.hedge import NN_Online
 from models.binary_basic import *
 from models.quant_basic import *
 
+
 class CNN_online_MNIST_V1(NN_Online):
     """
         V1 CNN model for MNIST
