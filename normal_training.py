@@ -64,7 +64,8 @@ def get_pytorch_obj():
         bit_a=config['A_BIT'] if 'A_BIT' in config.keys() else 32,
         version=config['MODEL_VER'],
         device=DEVICE,
-        online=False
+        online=False,
+        if_insnorm=config['IF_INSNORM'] if 'IF_INSNORM' in config.keys() else False
     ).to(DEVICE)
     # Setting up parameter groups and weight decay
     weight_decay = config['WEIGHT_DECAY'] if 'WEIGHT_DECAY' in config.keys() else 0.0
@@ -160,7 +161,7 @@ def main():
             count += 1
             total_count += 1
             # Classic pytorch pipeline
-            with torch.autograd.set_detect_anomaly(True):
+            with torch.autograd.set_detect_anomaly(False):
                 model.train()
                 optimizer.zero_grad()
                 y = model(images.to(DEVICE))

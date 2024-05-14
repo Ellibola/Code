@@ -23,7 +23,7 @@ class NN_Online(nn.Module):
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
             x = module(x)
             pred = classifier(x)
-            pred_final += F.softmax(pred, dim=1) * self.alpha[i]
+            pred_final += F.softmax(pred, dim=1) * self.alpha[i].detach()
         return pred_final
 
     def forward_train(self, x: torch.Tensor, target: torch.Tensor):
@@ -34,7 +34,7 @@ class NN_Online(nn.Module):
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
             x = module(x)
             pred = classifier(x.clone())
-            prediction_list.append(pred)
+            prediction_list.append(pred.detach())
             if i==0:
                 loss = F.cross_entropy(pred, target) * self.alpha[i].detach()
             else:

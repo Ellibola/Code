@@ -13,6 +13,5 @@
     "A_BIT"                   : 32,
     "VAL_PAR"                 : 0.1,
     "IF_VAL"                  : 1,
-    "BETA"                    : 0.99,
-    "SMOOTH_FACTOR"           : 0.2
+    "IF_INSNORM"              : 1
   }

@@ -65,7 +65,9 @@ def get_pytorch_obj():
         bit_w=config['W_BIT'] if 'W_BIT' in config.keys() else 32,
         bit_a=config['A_BIT'] if 'A_BIT' in config.keys() else 32,
         version=config['MODEL_VER'],
-        device=DEVICE
+        device=DEVICE,
+        if_avg=config['IF_PARAM_AVG'] if 'IF_PARAM_AVG' in config.keys() else False,
+        gamma=config['GAMMA'] if 'GAMMA' in config.keys() else 0.99,
     ).to(DEVICE)
     # Set the hyper parameter of the online CNN
     model.set_hyper_params(
@@ -171,7 +173,7 @@ def main():
             count += 1
             total_count += 1
             # Classic pytorch pipeline
-            with torch.autograd.set_detect_anomaly(True):
+            with torch.autograd.set_detect_anomaly(False):
                 loss, y = model.step(images.to(DEVICE), labels.to(DEVICE), optimizer)
             # Append loss
             loss_accumulated += loss.item()

@@ -10,7 +10,7 @@ class CNN_MNIST_V1(nn.Module):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.features = [
+        self.features = nn.Sequential(
             nn.Sequential(
                 nn.Conv2d(1, 32, 3, padding=1, bias=False),
                 nn.BatchNorm2d(32, affine=True),
@@ -50,13 +50,13 @@ class CNN_MNIST_V1(nn.Module):
                 nn.AdaptiveAvgPool2d(1)
             )
             # (128,1,1)
-        ]
-        self.classifiers = [
+        )
+        self.classifiers = nn.Sequential(
             nn.Sequential(
                 nn.Flatten(start_dim=1),
                 nn.Linear(128, 10, bias=True)
             )
-        ]
+        )
 
     def forward(self, x:torch.Tensor):
         return self.classifiers(self.features(x))
