@@ -44,3 +44,7 @@ To use this project, follow the steps below:
    The results including trained model, losses, validation accuracy can be access under "./History/TIME_EXP_INDEX" folder.
 
    The figures used in the report is drawn using "./draw_figure.ipynb"
+
+6. **Switch between EG and Hegde**
+   
+   By commenting corresponding lines in "./models/CNN_Online.py" and "./models/MobileNet_Online.py", one can import the class "NN_Online" from either "./models/eg.py" or "./models/hedge.py", i.e. switching between EG and Hedge algorithms.
