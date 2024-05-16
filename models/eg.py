@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class NN_Online(nn.Module):
+    """
+        Online NN architecture with randomized Exponentiated Gradient
+    """
     def __init__(self) -> None:
         super(NN_Online, self).__init__()
         self.features, self.classifiers = self._module_compose()
@@ -20,30 +23,28 @@ class NN_Online(nn.Module):
         # The input should be a batched 2D image
         assert len(x.shape)==4, "The input should be a batched 2D image"
         pred_final = 0
+        idx = torch.multinomial(self.alpha, 1, replacement=True).item()
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
             x = module(x)
             pred = classifier(x)
-            pred_final += F.softmax(pred, dim=1) * self.alpha[i].detach()
+            if i==idx:
+                pred_final = pred
         return pred_final
 
     def forward_train(self, x: torch.Tensor, target: torch.Tensor):
         # The input should be a batched 2D image
         assert len(x.shape)==4, "The input should be a batched 2D image"
         # Calculate the features and loss
+        idx = torch.multinomial(self.alpha, 1, replacement=True).item()
         prediction_list = []
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
             x = module(x)
             pred = classifier(x.clone())
             prediction_list.append(pred.detach())
-            if i==0:
-                loss = F.cross_entropy(pred, target) * self.alpha[i].detach()
-            else:
-                loss += F.cross_entropy(pred, target) * self.alpha[i].detach()
+            if i==idx:
+                pred_final = pred
+                loss = F.cross_entropy(pred, target)
         # Compose the final prediction
-        with torch.no_grad():
-            pred_final = 0.0
-            for i, pred in enumerate(prediction_list):
-                pred_final += F.softmax(pred, dim=1) * self.alpha[i].detach()
         return loss, pred_final, prediction_list
     
     def step(self, x: torch.Tensor, target: torch.Tensor, optimizer: torch.optim.Optimizer):

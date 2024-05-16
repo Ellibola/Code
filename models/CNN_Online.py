@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+# Hedge
 from models.hedge import NN_Online
+# EG
+# from models.eg import NN_Online
 from models.binary_basic import *
 from models.quant_basic import *
 

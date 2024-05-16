@@ -12,7 +12,8 @@ def get_para_group(model:nn.Module, weight_decay:float):
     params_decay = []
     params_other = []
     for name, param in model.named_parameters():
-        if len(param.shape)==1:
+        # For LSQ, the quant param should not be decayed, while for PACT it should !
+        if len(param.shape)<=1:
             print(name)
             params_other.append(param)
         else:

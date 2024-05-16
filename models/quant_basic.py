@@ -72,10 +72,10 @@ class AQ_LSQ(nn.Module):
         if self.init_flag:
             self.step_size.data = 2 * x.detach().abs().mean() / math.sqrt(self.Qp)
             self.init_flag = False
-        step_size = self.gscale(self.step_size, 1 / math.sqrt(self.Qp * x.shape[1:].numel()))
-        x = self.ste(x.div(step_size))
+        step_size = self.gscale(self.step_size, 1 / math.sqrt(self.Qp * x.shape[1:].numel())).abs()
+        x = self.ste(x.div(step_size + 1e-12))
         x = torch.clamp(x, 0, self.Qp)
-        return x.mul(step_size)
+        return x.mul(step_size + 1e-12)
 
 
 # Get the corresponding quantization function
