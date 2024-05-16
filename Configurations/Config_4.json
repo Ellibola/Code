@@ -1,0 +1,19 @@
+{   
+    "TRAINING_TYPE"           : "ol",
+    "MODEL_VER"               : "V1",
+    "LR"                      : 1e-4,
+    "WEIGHT_DECAY"            : 1e-4,
+    "GPU_IDX"                 : 1,
+    "OPT"                     : "SGD",
+    "DATASET"                 : "cifar100",
+    "BATCH_SIZE"              : 1,
+    "NUM_EPOCH"               : 20,
+    "W_BIT"                   : 32,
+    "A_BIT"                   : 32,
+    "VAL_PAR"                 : 0.1,
+    "IF_VAL"                  : 1,
+    "BETA"                    : 0.99,
+    "SMOOTH_FACTOR"           : 0.4,
+    "IF_AVG"                  : 0,
+    "GAMMA"                   : 0.999
+  }
