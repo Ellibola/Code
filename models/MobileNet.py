@@ -317,3 +317,57 @@ class MobileNetV1_calt101(nn.Module):
         )
     def forward(self, x:torch.Tensor):
         return self.module_list(x)
+    
+class MobileNetV1_imagenet(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.module_list = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(32, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(32, 64, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(64, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(128, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(128, 128, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(128, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(128, 256, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(256, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(256, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(256, 512, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(512, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(512, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(512, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(512, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(512, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.BatchNorm2d(512, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(512, 1024, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(1024, affine=True),
+            nn.ReLU(),
+            Conv2d_DS(1024, 1024, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(1024, affine=True),
+            nn.AdaptiveAvgPool2d(1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(1024, 1000, bias=False),
+            nn.BatchNorm1d(1000, affine=True)
+        )
+    def forward(self, x:torch.Tensor):
+        return self.module_list(x)

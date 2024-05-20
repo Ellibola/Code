@@ -44,5 +44,10 @@ def model_wizard(
             raise NotImplementedError
         elif (bit_w==32)&(bit_a==32):
             return MobileNetV1_calt101().to(device)
+    elif dataset=='imagenet':
+        if (bit_w==32)&(bit_a==32)&online:
+            return MobileNetV1_online_imagenet().to(device)
+        elif (bit_w==32)&(bit_a==32):
+            return MobileNetV1_imagenet().to(device)
     else:
         raise NotImplementedError

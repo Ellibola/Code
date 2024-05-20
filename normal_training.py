@@ -48,7 +48,7 @@ with open(args.root + os.sep + "settings.json", 'r') as f:
 
 """ The device runing the model """
 # For Apple silicon
-DEVICE = torch.device("mps")
+# DEVICE = torch.device("mps")
 # For Linux Server
 if (config['GPU_IDX'] if 'GPU_IDX' in config.keys() else False):
     DEVICE = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")

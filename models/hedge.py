@@ -61,10 +61,10 @@ class NN_Online(nn.Module):
         with torch.no_grad():
             assert len(self.alpha) == len(pred_list), "The length of alpha is not equal to that of the prediction list"
             for i, pred in enumerate(pred_list):
-                self.alpha[i] = torch.maximum(
-                    self.alpha[i] * (self.beta ** F.cross_entropy(pred, target)), 
+                self.alpha.data[i] = torch.maximum(
+                    self.alpha.data[i] * (self.beta ** F.cross_entropy(pred, target)), 
                     torch.tensor(self.s / len(self.classifiers))
                     )
             # Normalize the alpha
-            self.alpha = self.alpha.div(self.alpha.sum())
+            self.alpha.data = self.alpha.data.div(self.alpha.data.sum())
         

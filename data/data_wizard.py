@@ -66,6 +66,18 @@ def data_wizard(name:str, batch_size:int, val_par:float | None):
         n_train = len(c101) - n_test
         train_set, test_set = torch.utils.data.random_split(c101, [n_train, n_test])
         train_set, test_set = CustomDataset(train_set, train_trans), CustomDataset(test_set, test_trans)
+    elif name=='imagenet':
+        train_trans = TV.transforms.Compose([
+            TV.transforms.AutoAugment(TV.transforms.AutoAugmentPolicy.IMAGENET),
+            TV.transforms.Resize([224,224]),
+            TV.transforms.ToTensor()
+        ])
+        test_trans = TV.transforms.Compose([
+            TV.transforms.Resize([224,224]),
+            TV.transforms.ToTensor()
+        ])
+        train_set = TV.datasets.ImageFolder(root="/dataset/imagenet/train", transform=train_trans)
+        test_set = TV.datasets.ImageFolder(root="/dataset/imagenet/val", transform=test_trans)
     else:
         raise NotImplementedError
     
@@ -76,7 +88,7 @@ def data_wizard(name:str, batch_size:int, val_par:float | None):
         train_set, val_set = torch.utils.data.random_split(train_set, [n_train, n_val])
     
     # Prepare the dataloader
-    train_loader = DataLoader(train_set, batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, 200, shuffle=False)
-    test_loader = DataLoader(test_set, 200, shuffle=False)
+    train_loader = DataLoader(train_set, batch_size, shuffle=True, num_workers=3)
+    val_loader = DataLoader(val_set, 200, shuffle=False, num_workers=3)
+    test_loader = DataLoader(test_set, 200, shuffle=False, num_workers=3)
     return train_loader, val_loader, test_loader
