@@ -703,3 +703,334 @@ class MobileNetV1_online_imagenet(NN_Online):
             ),
         ]
         return nn.ModuleList(features), nn.ModuleList(classifiers)
+    
+class MobileNetV1_online_imagenet_V2(NN_Online):
+    """
+        Online MobileNet V2 for ImageNet, all the classifiers come with adaptive pooling
+    """
+    def _module_compose(self):
+        features = [
+            nn.Sequential(
+                nn.Conv2d(3, 32, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(32, affine=True),
+                nn.ReLU(),
+            ),
+            # (32, 112, 112)
+            nn.Sequential(
+                Conv2d_DS(32, 64, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(64, affine=True),
+                nn.ReLU(),
+            ),
+            # (64, 112, 112)
+            nn.Sequential(
+                Conv2d_DS(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(128, affine=True),
+                nn.ReLU(),
+            ),
+            # (128, 56, 56)
+            nn.Sequential(
+                Conv2d_DS(128, 128, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(128, affine=True),
+                nn.ReLU(),
+            ),
+            # (128, 56, 56)
+            nn.Sequential(
+                Conv2d_DS(128, 256, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(256, affine=True),
+                nn.ReLU(),
+            ),
+            # (256, 28, 28)
+            nn.Sequential(
+                Conv2d_DS(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(256, affine=True),
+                nn.ReLU(),
+            ),
+            # (256, 28, 28)
+            nn.Sequential(
+                Conv2d_DS(256, 512, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 1024, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(1024, affine=True),
+                nn.ReLU(),
+            ),
+            # (1024, 7, 7)
+            nn.Sequential(
+                Conv2d_DS(1024, 1024, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(1024, affine=True),
+                nn.AdaptiveAvgPool2d(1),
+                nn.ReLU(),
+            )
+            # (1024, 1, 1)
+        ]
+        classifiers = [
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(32, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(64, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(128, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(128, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(256, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(256, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(1024, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(1024, 1000, bias=True)
+            ),
+        ]
+        return nn.ModuleList(features), nn.ModuleList(classifiers)
+    
+
+class MobileNetV1_online_imagenet_V3(NN_Online):
+    """
+        Online MobileNet V3 for ImageNet, all the classifiers come with adaptive pooling, but different size
+    """
+    def _module_compose(self):
+        features = [
+            nn.Sequential(
+                nn.Conv2d(3, 32, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(32, affine=True),
+                nn.ReLU(),
+            ),
+            # (32, 112, 112)
+            nn.Sequential(
+                Conv2d_DS(32, 64, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(64, affine=True),
+                nn.ReLU(),
+            ),
+            # (64, 112, 112)
+            nn.Sequential(
+                Conv2d_DS(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(128, affine=True),
+                nn.ReLU(),
+            ),
+            # (128, 56, 56)
+            nn.Sequential(
+                Conv2d_DS(128, 128, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(128, affine=True),
+                nn.ReLU(),
+            ),
+            # (128, 56, 56)
+            nn.Sequential(
+                Conv2d_DS(128, 256, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(256, affine=True),
+                nn.ReLU(),
+            ),
+            # (256, 28, 28)
+            nn.Sequential(
+                Conv2d_DS(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(256, affine=True),
+                nn.ReLU(),
+            ),
+            # (256, 28, 28)
+            nn.Sequential(
+                Conv2d_DS(256, 512, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                nn.InstanceNorm2d(512, affine=True),
+                nn.ReLU(),
+            ),
+            # (512, 14, 14)
+            nn.Sequential(
+                Conv2d_DS(512, 1024, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(1024, affine=True),
+                nn.ReLU(),
+            ),
+            # (1024, 7, 7)
+            nn.Sequential(
+                Conv2d_DS(1024, 1024, kernel_size=3, padding=1, stride=2, bias=False),
+                nn.InstanceNorm2d(1024, affine=True),
+                nn.AdaptiveAvgPool2d(1),
+                nn.ReLU(),
+            )
+            # (1024, 1, 1)
+        ]
+        classifiers = [
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(16),
+                nn.Flatten(),
+                nn.Linear(32*16*16, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(8),
+                nn.Flatten(),
+                nn.Linear(64*8*8, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(4),
+                nn.Flatten(),
+                nn.Linear(128*4*4, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(4),
+                nn.Flatten(),
+                nn.Linear(128*4*4, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(2),
+                nn.Flatten(),
+                nn.Linear(256*2*2, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(2),
+                nn.Flatten(),
+                nn.Linear(256*2*2, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(512, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(1024, 1000, bias=True)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(1024, 1000, bias=True)
+            ),
+        ]
+        return nn.ModuleList(features), nn.ModuleList(classifiers)
