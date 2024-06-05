@@ -5,6 +5,8 @@ import random
 import math
 import matplotlib.pyplot as plt
 
+A_QUANT_METHOD = 'LSQ'  # WARNING: you also need to change accordingly in file quant_basics.py. It should be either 'PACT' or 'LSQ'
+
 def get_para_group(model:nn.Module, weight_decay:float):
     """
         Batch normalization layers should not apply weight decay
@@ -13,11 +15,18 @@ def get_para_group(model:nn.Module, weight_decay:float):
     params_other = []
     for name, param in model.named_parameters():
         # For LSQ, the quant param should not be decayed, while for PACT it should !
-        if len(param.shape)<=1:
-            print(name)
-            params_other.append(param)
+        if A_QUANT_METHOD == 'LSQ':
+            if len(param.shape)<=1:
+                print(name)
+                params_other.append(param)
+            else:
+                params_decay.append(param)
         else:
-            params_decay.append(param)
+            if len(param.shape)==1:
+                print(name)
+                params_other.append(param)
+            else:
+                params_decay.append(param)
     return [
         {'params': params_decay, 'weight_decay': weight_decay},
         {'params': params_other, 'weight_decay': 0.0}

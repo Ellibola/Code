@@ -10,6 +10,8 @@ from models.binary_basic import *
 from models.quant_basic import *
 # Parameter avg
 from models.para_avg_layer import *
+# Exp avg norm
+from models.ExpNorm import ExpNorm1d, ExpNorm2d
 
 class Conv2d_DS(nn.Module):
     """ Depth seperable Conv layers """
@@ -398,6 +400,9 @@ class MobileNetV1_online_c100_avg(NN_Online):
 
 
 class MobileNetV1_online_c100_Quant(NN_Online):
+    """
+        Quantized online MobileNetV1
+    """
     def __init__(self, bit_w, bit_a) -> None:
         self.bit_w = bit_w
         self.bit_a = bit_a
@@ -494,63 +499,419 @@ class MobileNetV1_online_c100_Quant(NN_Online):
         classifiers = [
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(32*32*32, 100, bias=True, bit_w=self.bit_w),     
+                QLinear(32*32*32, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)     
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(64*32*32, 100, bias=True, bit_w=self.bit_w),    
+                QLinear(64*32*32, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)    
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(128*16*16, 100, bias=True, bit_w=self.bit_w),    
+                QLinear(128*16*16, 100, bias=True, bit_w=self.bit_w), 
+                nn.LayerNorm(100)   
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(128*16*16, 100, bias=True, bit_w=self.bit_w),     
+                QLinear(128*16*16, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)     
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(256*8*8, 100, bias=True, bit_w=self.bit_w),    
+                QLinear(256*8*8, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)    
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(256*8*8, 100, bias=True, bit_w=self.bit_w),  
-            ),
-            nn.Sequential(
-                nn.Flatten(),
-                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w),   
+                QLinear(256*8*8, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)  
             ),
             nn.Sequential(
                 nn.Flatten(),
                 QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)   
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
                 QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w), 
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w), 
+                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100) 
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w), 
+                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100) 
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w), 
+                QLinear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100) 
             ),
             nn.Sequential(
                 nn.Flatten(),
                 QLinear(1024*2*2, 100, bias=True, bit_w=self.bit_w), 
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                QLinear(1024, 100, bias=True, bit_w=self.bit_w)
+                QLinear(1024, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)
             ),
         ]
         return nn.ModuleList(features), nn.ModuleList(classifiers)
     
+
+class MobileNetV1_online_c100_Quant_V2_EXPAVGNorm(NN_Online):
+    """
+        Quantized online MobileNet-V1 with exponential averaging normalization
+    """
+    def __init__(self, bit_w, bit_a) -> None:
+        self.bit_w = bit_w
+        self.bit_a = bit_a
+        super().__init__()
+
+    def _module_compose(self):
+        features = [
+            nn.Sequential(
+                QConv2d(3, 32, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(32, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (32, 32, 32)
+            nn.Sequential(
+                QConv2d_DS(32, 64, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(64, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (64, 32, 32)
+            nn.Sequential(
+                QConv2d_DS(64, 128, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(128, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (128, 16, 16)
+            nn.Sequential(
+                QConv2d_DS(128, 128, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(128, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (128, 16, 16)
+            nn.Sequential(
+                QConv2d_DS(128, 256, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(256, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (256, 8, 8)
+            nn.Sequential(
+                QConv2d_DS(256, 256, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(256, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (256, 8, 8)
+            nn.Sequential(
+                QConv2d_DS(256, 512, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 1024, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(1024, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (1024, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(1024, 1024, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                ExpNorm2d(1024, affine=True),
+                nn.AdaptiveAvgPool2d(1),
+                get_quant('a', bit=self.bit_a),
+            )
+            # (1024, 1, 1)
+        ]
+        classifiers = [
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(32*32*32, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)     
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(64*32*32, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)    
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(128*16*16, 100, bias=False, bit_w=self.bit_w), 
+                ExpNorm1d(100)   
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(128*16*16, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)     
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(256*8*8, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)    
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(256*8*8, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)  
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)   
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=False, bit_w=self.bit_w), 
+                ExpNorm1d(100)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100) 
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100) 
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(512*4*4, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100) 
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(1024*2*2, 100, bias=False, bit_w=self.bit_w), 
+                ExpNorm1d(100)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                QLinear(1024, 100, bias=False, bit_w=self.bit_w),
+                ExpNorm1d(100)
+            ),
+        ]
+        return nn.ModuleList(features), nn.ModuleList(classifiers)
+
+class MobileNetV1_online_c100_Quant_V3_FPclassifier(NN_Online):
+    """
+        Quantized online MobileNetV1 but with full-precision classifier (everything else remains the same with V1)
+    """
+    def __init__(self, bit_w, bit_a) -> None:
+        self.bit_w = bit_w
+        self.bit_a = bit_a
+        super().__init__()
+
+    def _module_compose(self):
+        features = [
+            nn.Sequential(
+                QConv2d(3, 32, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(32, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (32, 32, 32)
+            nn.Sequential(
+                QConv2d_DS(32, 64, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(64, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (64, 32, 32)
+            nn.Sequential(
+                QConv2d_DS(64, 128, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(128, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (128, 16, 16)
+            nn.Sequential(
+                QConv2d_DS(128, 128, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(128, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (128, 16, 16)
+            nn.Sequential(
+                QConv2d_DS(128, 256, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(256, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (256, 8, 8)
+            nn.Sequential(
+                QConv2d_DS(256, 256, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(256, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (256, 8, 8)
+            nn.Sequential(
+                QConv2d_DS(256, 512, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 512, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(512, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (512, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(512, 1024, kernel_size=3, padding=1, stride=2, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(1024, affine=True),
+                get_quant('a', bit=self.bit_a),
+            ),
+            # (1024, 4, 4)
+            nn.Sequential(
+                QConv2d_DS(1024, 1024, kernel_size=3, padding=1, stride=1, bias=False, bit_w=self.bit_w),
+                nn.InstanceNorm2d(1024, affine=True),
+                nn.AdaptiveAvgPool2d(1),
+                get_quant('a', bit=self.bit_a),
+            )
+            # (1024, 1, 1)
+        ]
+        classifiers = [
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(32*32*32, 100, bias=False),
+                nn.LayerNorm(100)     
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(64*32*32, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)    
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(128*16*16, 100, bias=True, bit_w=self.bit_w), 
+                nn.LayerNorm(100)   
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(128*16*16, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)     
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(256*8*8, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)    
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(256*8*8, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)  
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)   
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(512*4*4, 100, bias=True, bit_w=self.bit_w), 
+                nn.LayerNorm(100)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100) 
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100) 
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(512*4*4, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100) 
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(1024*2*2, 100, bias=True, bit_w=self.bit_w), 
+                nn.LayerNorm(100)
+            ),
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(1024, 100, bias=True, bit_w=self.bit_w),
+                nn.LayerNorm(100)
+            ),
+        ]
+        return nn.ModuleList(features), nn.ModuleList(classifiers)
 
 class MobileNetV1_online_imagenet(NN_Online):
     """

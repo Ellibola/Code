@@ -8,6 +8,7 @@ from torch import Tensor
 # Math
 import math
 
+A_QUANT_METHOD = 'LSQ'  # WARNING: you also need to change accordingly in file utils.py. It should be either 'PACT' or 'LSQ'
 
 class UniQ(torch.autograd.Function):
     @staticmethod
@@ -78,13 +79,26 @@ class AQ_LSQ(nn.Module):
         return x.mul(step_size + 1e-12)
 
 
+class AQ_PACT(nn.Module):
+    def __init__(self, bit=8, norm=False):
+        super(AQ_PACT, self).__init__()
+        self.bit = bit
+        self.quant = UniQ().apply
+        self.th = nn.Parameter(torch.tensor(10.0))
+
+    def forward(self, x: Tensor):
+        x = x.relu()
+        x = torch.where(x>self.th.abs(), self.th.abs(), x)
+        x = self.quant(x.div(self.th.abs()+1e-8), self.bit).mul(self.th.abs()+1e-8)
+        return x
+
 # Get the corresponding quantization function
 def get_quant(target='w', bit=8, norm=False):
     assert bit>1, "For binary quantization please use binarization functions!"
     if target=='w':
         return WQ_DoReFa(bit)
     if target=='a':
-        return AQ_LSQ(bit)
+        return AQ_LSQ(bit) if A_QUANT_METHOD=='LSQ' else AQ_PACT(bit)
 
 
 

@@ -33,8 +33,12 @@ def model_wizard(
             if (kwargs['if_avg'] if "if_avg" in kwargs.keys() else False):
                 return MobileNetV1_online_c100_avg(kwargs['gamma']).to(device)
             return MobileNetV1_online_c100().to(device)
-        elif (bit_w in [2, 4, 8, 16])|(bit_a in [2, 4, 8, 16])&online:
+        elif (bit_w in [2, 4, 8, 16, 24])|(bit_a in [2, 4, 8, 16, 24])&online&(version=='V1'):
             return MobileNetV1_online_c100_Quant(bit_w=bit_w, bit_a=bit_a).to(device)
+        elif (bit_w in [2, 4, 8, 16, 24])|(bit_a in [2, 4, 8, 16, 24])&online&(version=='V2'):
+            return MobileNetV1_online_c100_Quant_V2_EXPAVGNorm(bit_w=bit_w, bit_a=bit_a).to(device)
+        elif (bit_w in [2, 4, 8, 16, 24])|(bit_a in [2, 4, 8, 16, 24])&online&(version=='V3'):
+            return MobileNetV1_online_c100_Quant_V3_FPclassifier(bit_w=bit_w, bit_a=bit_a).to(device)
         elif (bit_w==32)&(bit_a==32):
             if (kwargs['if_insnorm'] if "if_insnorm" in kwargs.keys() else False):
                 return MobileNetV1_c100_insnorm().to(device)
