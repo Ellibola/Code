@@ -22,7 +22,7 @@ class UniQ(torch.autograd.Function):
 class STE(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x:Tensor):
-        return x
+        return x.round()
     @staticmethod
     def backward(ctx, grad_outputs):
         return grad_outputs
@@ -71,11 +71,13 @@ class AQ_LSQ(nn.Module):
     
     def forward(self, x:torch.Tensor):
         if self.init_flag:
-            self.step_size.data = 2 * x.detach().abs().mean() / math.sqrt(self.Qp)
+            self.step_size.data = 2 * torch.randn_like(x).detach().abs().mean() / math.sqrt(self.Qp)
             self.init_flag = False
+            # Debug
+            print("Initialized step size:{}".format(self.step_size.data))
         step_size = self.gscale(self.step_size, 1 / math.sqrt(self.Qp * x.shape[1:].numel())).abs()
-        x = self.ste(x.div(step_size + 1e-12))
-        x = torch.clamp(x, 0, self.Qp)
+        x = self.ste(x.div(step_size + 1e-12).relu())
+        x = torch.clamp(x, None, self.Qp)
         return x.mul(step_size + 1e-12)
 
 

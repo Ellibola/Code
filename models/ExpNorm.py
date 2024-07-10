@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ExpNorm2d(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=1e-3, affine=True):
         super(ExpNorm2d, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -28,7 +28,7 @@ class ExpNorm2d(nn.Module):
             nn.init.ones_(self.weight)
             nn.init.zeros_(self.bias)
         nn.init.zeros_(self.running_mean)
-        nn.init.ones_(self.running_var)
+        nn.init.zeros_(self.running_sqr_mean)
         self.num_batches_tracked.zero_()
         
     def forward(self, x: torch.Tensor):
@@ -53,7 +53,7 @@ class ExpNorm2d(nn.Module):
         return x
     
 class ExpNorm1d(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=1e-3, affine=True):
         super(ExpNorm1d, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -78,7 +78,7 @@ class ExpNorm1d(nn.Module):
             nn.init.ones_(self.weight)
             nn.init.zeros_(self.bias)
         nn.init.zeros_(self.running_mean)
-        nn.init.ones_(self.running_var)
+        nn.init.zeros_(self.running_sqr_mean)
         self.num_batches_tracked.zero_()
         
     def forward(self, x: torch.Tensor):

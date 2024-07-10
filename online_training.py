@@ -80,8 +80,7 @@ def get_pytorch_obj():
     optimizer = \
         opt.AdamW(
             params=param_group,
-            lr=config['LR'],
-            weight_decay=weight_decay
+            lr=config['LR']
         ) \
         if config['OPT']=="adamw" else \
         FTRL(
@@ -92,8 +91,7 @@ def get_pytorch_obj():
         opt.SGD(
             params=param_group,
             lr=config['LR'],
-            momentum=0.9,
-            weight_decay=weight_decay
+            momentum=0.9
         )
     return model, optimizer
 
@@ -130,6 +128,7 @@ def main():
     loss_list = []
     # Get pytorch objs
     model, optimizer = get_pytorch_obj()
+    print("The model to be trained is:{}".format(model.__class__.__name__))
     # Load the saved state:
     if ("CONTINUE_FROM_SAVED" in config.keys()) and \
        ("ROOT_TO_SAVED" in config.keys()) and config["CONTINUE_FROM_SAVED"]:
