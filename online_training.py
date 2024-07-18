@@ -20,6 +20,7 @@ from utils import *
 import csv
 # Customized optimizers
 from optimizers.ftrl import FTRL
+from optimizers.obc import OBC
 
 """ Parse experiment indexes """
 parser = argparse.ArgumentParser(description='T-model training framework')
@@ -77,7 +78,32 @@ def get_pytorch_obj():
     # Setting up parameter groups and weight decay
     weight_decay = config['WEIGHT_DECAY'] if 'WEIGHT_DECAY' in config.keys() else 0.0
     param_group = get_para_group(model, weight_decay) if weight_decay!=0 else model.parameters()
-    optimizer = \
+    # If we need to use OBC or not
+    if (config['IF_OBC'] if 'IF_OBC' in config.keys() else False):
+        optimizer = \
+        OBC(
+            params=param_group,
+            base_optimizer_class=opt.AdamW,
+            eta=config['OBC_ETA'] if 'OBC_ETA' in config.keys() else 0.99,
+            lr=config['LR']
+        ) \
+        if config['OPT']=="adamw" else \
+        OBC(
+            params=param_group,
+            base_optimizer_class=FTRL,
+            eta=config['OBC_ETA'] if 'OBC_ETA' in config.keys() else 0.99,
+            alpha=config['ALPHA']
+        ) \
+        if config['OPT']=="ftrl" else \
+        OBC(
+            params=param_group,
+            base_optimizer_class=opt.SGD,
+            eta=config['OBC_ETA'] if 'OBC_ETA' in config.keys() else 0.99,
+            lr=config['LR'],
+            momentum=0.9
+        )
+    else:
+        optimizer = \
         opt.AdamW(
             params=param_group,
             lr=config['LR']

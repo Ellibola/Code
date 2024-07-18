@@ -5,18 +5,18 @@ import torch.nn.functional as F
 import torch.optim as OPT
 
 class OBC(OPT.Optimizer):
-    def __init__(self, params, base_optimizer_class:OPT.SGD|OPT.AdamW, alpha:float=0.01, beta:float=0.99, **base_optimizer_args) -> None:
-        defaults = dict(alpha=alpha, beta=beta)
+    def __init__(self, params, base_optimizer_class:OPT.SGD|OPT.AdamW, eta:float=0.99, **base_optimizer_args) -> None:
+        defaults = dict(eta=eta, **base_optimizer_args)
         super().__init__(params, defaults)
+        self.eta = eta
         self.shadow_params = []
         # Create shadow parameters and preserve the same parameter group structure
         for group in params:
             shadow_group = []
             for p in group['params']:
-                if p.requires_grad:
-                    shadow_param = p.clone().detach()
-                    shadow_param.requires_grad = False
-                    shadow_group.append(shadow_param)
+                shadow_param = p.clone().detach()
+                shadow_param.requires_grad = False
+                shadow_group.append(shadow_param)
             self.shadow_params.append({'params': shadow_group, **{k: v for k, v in group.items() if k != 'params'}})
         
         # Initialize the base optimizer with shadow parameters
@@ -47,6 +47,6 @@ class OBC(OPT.Optimizer):
                     continue
                 
                 # Update original parameters
-                p.data = self.beta * p.data + (1 - self.beta) * shadow_p.data
+                p.data = self.eta * p.data + (1 - self.eta) * shadow_p.data
 
         return loss

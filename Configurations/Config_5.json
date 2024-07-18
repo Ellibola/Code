@@ -1,0 +1,19 @@
+{   
+    "TRAINING_TYPE"           : "ol",
+    "MODEL_VER"               : "V1",
+    "LR"                      : 1e-6,
+    "WEIGHT_DECAY"            : 1e-6,
+    "GPU_IDX"                 : 0,
+    "OPT"                     : "adam",
+    "DATASET"                 : "cifar100",
+    "IF_OBC"                  : 0,
+    "OBC_ETA"                 : 0.99,
+    "BATCH_SIZE"              : 1,
+    "NUM_EPOCH"               : 100,
+    "W_BIT"                   : 32,
+    "A_BIT"                   : 32,
+    "VAL_PAR"                 : 0.1,
+    "IF_VAL"                  : 1,
+    "BETA"                    : 0.999,
+    "SMOOTH_FACTOR"           : 0.2
+  }
