@@ -3,7 +3,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 # Online CNN basic
-from models.hedge import NN_Online
+OL_TYPE = 'exp3_jump'
+if OL_TYPE=='hedge':
+    from models.hedge import NN_Online
+elif OL_TYPE=='eg':
+    from models.eg import NN_Online
+elif OL_TYPE=='exp3':
+    from models.exp3 import NN_Online
+elif OL_TYPE=='exp3_avg':
+    from models.exp3_avg import NN_Online
+elif OL_TYPE=='exp3_jump':
+    from models.exp3_jump import NN_Online
+else:
+    raise NotImplementedError
 # Binary basics
 from models.binary_basic import *
 # Quantization basics

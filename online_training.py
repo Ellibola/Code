@@ -68,7 +68,7 @@ def get_pytorch_obj():
         version=config['MODEL_VER'],
         device=DEVICE,
         if_avg=config['IF_PARAM_AVG'] if 'IF_PARAM_AVG' in config.keys() else False,
-        gamma=config['GAMMA'] if 'GAMMA' in config.keys() else 0.99,
+        gamma=config['GAMMA'] if 'GAMMA' in config.keys() else 0.99
     ).to(DEVICE)
     # Set the hyper parameter of the online CNN
     model.set_hyper_params(
@@ -190,6 +190,8 @@ def main():
             validated_acc.append([str(acc_t1), str(acc_t5)])
             print("Validation acc_t1:{:.3f}%".format(acc_t1))
             print("Validation acc_t5:{:.3f}% \n".format(acc_t5))
+            if (config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False)=='exp3_jump':
+                model.jump(acc_t1)
         # Variables for lr scheduler
         count = 0
         loss_accumulated = 0

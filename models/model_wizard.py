@@ -6,6 +6,7 @@ from models.CNN import *
 from models.MobileNet import *
 from models.MobileNet_Online import *
 from models.VGG import *
+from models.VGG_online import *
 
 def model_wizard(
         dataset:str="mnist", 
@@ -30,20 +31,22 @@ def model_wizard(
         else:
             raise NotImplementedError
     elif dataset=='cifar100':
-        if (bit_w==32)&(bit_a==32)&online:
+        if (bit_w==32)&(bit_a==32)&online&(version=='V1'):
             if (kwargs['if_avg'] if "if_avg" in kwargs.keys() else False):
                 return MobileNetV1_online_c100_avg(kwargs['gamma']).to(device)
             return MobileNetV1_online_c100().to(device)
+        elif (bit_w==32)&(bit_a==32)&(version=='V1'):
+            if (kwargs['if_insnorm'] if "if_insnorm" in kwargs.keys() else False):
+                return MobileNetV1_c100_insnorm().to(device)
+            return MobileNetV1_c100().to(device)
         elif ((bit_w in [2, 4, 8, 16, 24])|(bit_a in [2, 4, 8, 16, 24]))&online&(version=='V1'):
             return MobileNetV1_online_c100_Quant(bit_w=bit_w, bit_a=bit_a).to(device)
         elif ((bit_w in [2, 4, 8, 16, 24])|(bit_a in [2, 4, 8, 16, 24]))&online&(version=='V2'):
             return MobileNetV1_online_c100_Quant_V2_EXPAVGNorm(bit_w=bit_w, bit_a=bit_a).to(device)
         elif ((bit_w in [2, 4, 8, 16, 24])|(bit_a in [2, 4, 8, 16, 24]))&online&(version=='V3'):
             return MobileNetV1_online_c100_Quant_V3_FPclassifier(bit_w=bit_w, bit_a=bit_a).to(device)
-        elif (bit_w==32)&(bit_a==32)&(version=='V1'):
-            if (kwargs['if_insnorm'] if "if_insnorm" in kwargs.keys() else False):
-                return MobileNetV1_c100_insnorm().to(device)
-            return MobileNetV1_c100().to(device)
+        elif (bit_w==32)&(bit_a==32)&(version=='V4')&online:
+            return VGG_c100_online().to(device)
         elif (bit_w==32)&(bit_a==32)&(version=='V4'):
             return VGG_c100().to(device)
         elif ((bit_w in [2, 4, 8, 16])|(bit_a in [2, 4, 8, 16]))&(version=='V4'):
