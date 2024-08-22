@@ -44,6 +44,10 @@ args = parser.parse_args()
 orig_stdout = sys.stdout
 f = open(args.root + os.sep + "log.out", 'w')
 sys.stdout = f
+""" Redirect stderr to file"""
+orig_stderr = sys.stderr
+f_err = open(args.root + os.sep + "log_err.out", 'w')
+sys.stderr = f_err
 
 """ Read configuration from file """
 with open(args.root + os.sep + "settings.json", 'r') as f:
@@ -190,8 +194,9 @@ def main():
             validated_acc.append([str(acc_t1), str(acc_t5)])
             print("Validation acc_t1:{:.3f}%".format(acc_t1))
             print("Validation acc_t5:{:.3f}% \n".format(acc_t5))
-            if (config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False)=='exp3_jump':
-                model.jump(acc_t1)
+            if (('jump' in config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False))&\
+               ((config['JUMP_CRT']=='val_acc' if 'JUMP_CRT' in config.keys() else False)):
+                model.jump(acc_t1, 'val_acc')
         # Variables for lr scheduler
         count = 0
         loss_accumulated = 0
@@ -216,11 +221,15 @@ def main():
             if (total_count % int(4000/config['BATCH_SIZE']) == 0)&(not (config['IF_MIXUP_CUTMIX'] if 'IF_MIXUP_CUTMIX' in config.keys() else False)):
                 print('Current top1 acc: {:.3f}%'.format(c1_sum / n_sum * 100))
                 print('Current top5 acc: {:.3f}% \n'.format(c5_sum / n_sum * 100))
+                # Save the check_point
+                torch.save(model.state_dict(), args.root+os.sep+'model_checkpoint')
+                if (('jump' in config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False))&\
+                   ((config['JUMP_CRT']=='loss' if 'JUMP_CRT' in config.keys() else False)):
+                    model.jump(loss_accumulated/n_sum, 'loss')
                 c1_sum = 0
                 c5_sum = 0
                 n_sum = 0
-                # Save the check_point
-                torch.save(model.state_dict(), args.root+os.sep+'model_checkpoint')
+                loss_accumulated = 0
             # Constrain weights:
             for layer in model.modules():
                 if (type(layer).__name__ == 'BConv2d') | \
@@ -244,3 +253,7 @@ if __name__ == "__main__":
 """ Redirect stdout to file"""
 sys.stdout = orig_stdout
 f.close()
+
+""" Redirect stderr back"""
+sys.stderr = orig_stderr
+f_err.close()

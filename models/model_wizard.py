@@ -49,6 +49,8 @@ def model_wizard(
             return VGG_c100_online().to(device)
         elif (bit_w==32)&(bit_a==32)&(version=='V4'):
             return VGG_c100().to(device)
+        elif (bit_w==32)&(bit_a==32)&(version=='V5'):
+            return VGG_c100_olnorm().to(device)
         elif ((bit_w in [2, 4, 8, 16])|(bit_a in [2, 4, 8, 16]))&(version=='V4'):
             return VGG_c100_Quant(bit_w=bit_w, bit_a=bit_a).to(device)
         elif ((bit_w in [2, 4, 8, 16])|(bit_a in [2, 4, 8, 16]))&(version=='V1'):

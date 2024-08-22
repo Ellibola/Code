@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-OL_TYPE = 'exp3_jump'
+OL_TYPE = 'exp3_jump_avg'
 if OL_TYPE=='hedge':
     from models.hedge import NN_Online
 elif OL_TYPE=='eg':
@@ -12,6 +12,8 @@ elif OL_TYPE=='exp3_avg':
     from models.exp3_avg import NN_Online
 elif OL_TYPE=='exp3_jump':
     from models.exp3_jump import NN_Online
+elif OL_TYPE=='exp3_jump_avg':
+    from models.exp3_jump_avg import NN_Online
 else:
     raise NotImplementedError
 from models.binary_basic import *

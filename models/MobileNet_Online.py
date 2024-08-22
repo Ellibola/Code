@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 # Online CNN basic
-OL_TYPE = 'exp3_jump'
+OL_TYPE = 'exp3_jump_avg'
 if OL_TYPE=='hedge':
     from models.hedge import NN_Online
 elif OL_TYPE=='eg':
@@ -14,6 +14,8 @@ elif OL_TYPE=='exp3_avg':
     from models.exp3_avg import NN_Online
 elif OL_TYPE=='exp3_jump':
     from models.exp3_jump import NN_Online
+elif OL_TYPE=='exp3_jump_avg':
+    from models.exp3_jump_avg import NN_Online
 else:
     raise NotImplementedError
 # Binary basics
@@ -215,59 +217,73 @@ class MobileNetV1_online_c100(NN_Online):
         classifiers = [
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(32*32*32, 100, bias=True)
+                nn.Linear(32*32*32, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(64*32*32, 100, bias=True)
+                nn.Linear(64*32*32, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(128*16*16, 100, bias=True)
+                nn.Linear(128*16*16, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(128*16*16, 100, bias=True)
+                nn.Linear(128*16*16, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(256*8*8, 100, bias=True)
+                nn.Linear(256*8*8, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(256*8*8, 100, bias=True)
+                nn.Linear(256*8*8, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(512*4*4, 100, bias=True)
+                nn.Linear(512*4*4, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(512*4*4, 100, bias=True)
+                nn.Linear(512*4*4, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(512*4*4, 100, bias=True)
+                nn.Linear(512*4*4, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(512*4*4, 100, bias=True)
+                nn.Linear(512*4*4, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(512*4*4, 100, bias=True)
+                nn.Linear(512*4*4, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(512*4*4, 100, bias=True)
+                nn.Linear(512*4*4, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(1024*2*2, 100, bias=True)
+                nn.Linear(1024*2*2, 100, bias=True),
+                nn.LayerNorm(100)
             ),
             nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(1024, 100, bias=True)
+                nn.Linear(1024, 100, bias=True),
+                nn.LayerNorm(100)
             ),
         ]
         return nn.ModuleList(features), nn.ModuleList(classifiers)

@@ -1,6 +1,6 @@
 {   
     "TRAINING_TYPE"           : "normal",
-    "MODEL_VER"               : "V4",
+    "MODEL_VER"               : "V5",
     "LR"                      : 1e-4,
     "WEIGHT_DECAY"            : 1e-4,
     "IF_LR_SCH"               : 1,
