@@ -3,12 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ExpNorm2d(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=1e-3, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, batch_size=200):
         super(ExpNorm2d, self).__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
+        self.batch_size = batch_size
+        self.gotcha = False
         
         if self.affine:
             self.weight = nn.Parameter(torch.ones(num_features))
@@ -18,8 +20,10 @@ class ExpNorm2d(nn.Module):
             self.register_parameter('bias', None)
         
         self.register_buffer('running_mean', torch.zeros(num_features))
-        self.register_buffer('running_sqr_mean', torch.zeros(num_features))
-        self.register_buffer('num_batches_tracked', torch.tensor(0, dtype=torch.long))
+        self.register_buffer('running_var', torch.ones(num_features))
+        self.register_buffer('batch_sum', torch.zeros(num_features))
+        self.register_buffer('batch_sqr_sum', torch.zeros(num_features))
+        self.register_buffer('num_batches_tracked', torch.zeros(1))
         
         self.reset_parameters()
         
@@ -28,24 +32,49 @@ class ExpNorm2d(nn.Module):
             nn.init.ones_(self.weight)
             nn.init.zeros_(self.bias)
         nn.init.zeros_(self.running_mean)
-        nn.init.zeros_(self.running_sqr_mean)
-        self.num_batches_tracked.zero_()
-        
+        nn.init.ones_(self.running_var)
+        nn.init.zeros_(self.batch_sum)
+        nn.init.zeros_(self.batch_sqr_sum)
+        nn.init.zeros_(self.num_batches_tracked)
+        self.gotcha = False
+
     def forward(self, x: torch.Tensor):
         assert len(x.shape)==4, "The input should be 2D features, got dimension:{}".format(x.shape)
-        if self.training:
-            # Update the statistics
-            with torch.no_grad():
-                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * x.mean(dim=[0,2,3])
-                self.running_sqr_mean = (1 - self.momentum) * self.running_sqr_mean + self.momentum * x.square().mean(dim=[0,2,3])
-                self.num_batches_tracked += 1
-                mean = self.running_mean
-                var = self.running_sqr_mean - self.running_mean.square()
-        else:
-            mean = self.running_mean
-            var = self.running_sqr_mean - self.running_mean.square()
+        with torch.no_grad():
+            if self.training:
+                # Update the batch statistics
+                if self.num_batches_tracked<self.batch_size:
+                    self.batch_sum += x.mean(dim=[0,2,3])
+                    self.batch_sqr_sum += x.square().mean(dim=[0,2,3])
+                    self.num_batches_tracked += 1
+                else:
+                    self.gotcha = True
+                    self.batch_sum = x.mean(dim=[0,2,3])
+                    self.batch_sqr_sum = x.square().mean(dim=[0,2,3])
+                    self.num_batches_tracked = torch.ones_like(self.num_batches_tracked)
+
+                mean_b = self.batch_sum/self.num_batches_tracked
+                sqr_b = self.batch_sqr_sum/self.num_batches_tracked
+                var_b = sqr_b - mean_b.square()
+
+                if self.num_batches_tracked==self.batch_size:
+                    # Update running statistic when a batch finished
+                    self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean_b if self.gotcha else\
+                                        mean_b
+                    self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var_b if self.gotcha else\
+                                        var_b
+                mean = self.running_mean if self.gotcha else mean_b
+                var = self.running_var if self.gotcha else var_b
+
+            else:
+                mean_b = self.batch_sum/self.num_batches_tracked if self.num_batches_tracked!=0 else torch.zeros_like(self.batch_sum).detach()
+                sqr_b = self.batch_sqr_sum/self.num_batches_tracked if self.num_batches_tracked!=0 else torch.ones_like(self.batch_sqr_sum).detach()
+                var_b = sqr_b - mean_b.square()
+                mean = self.running_mean if self.gotcha else mean_b
+                var = self.running_var if self.gotcha else var_b
+
         
-        x = (x - mean[None, :, None, None]) / torch.sqrt(var[None, :, None, None] + self.eps)
+        x = (x - mean[None, :, None, None].detach()) / torch.sqrt(var[None, :, None, None].detach() + self.eps)
         
         if self.affine:
             x = x * self.weight[None, :, None, None] + self.bias[None, :, None, None]
@@ -53,13 +82,15 @@ class ExpNorm2d(nn.Module):
         return x
     
 class ExpNorm1d(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=1e-3, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, batch_size=200):
         super(ExpNorm1d, self).__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
-        
+        self.batch_size = batch_size
+        self.gotcha = False
+
         if self.affine:
             self.weight = nn.Parameter(torch.ones(num_features))
             self.bias = nn.Parameter(torch.zeros(num_features))
@@ -68,8 +99,10 @@ class ExpNorm1d(nn.Module):
             self.register_parameter('bias', None)
         
         self.register_buffer('running_mean', torch.zeros(num_features))
-        self.register_buffer('running_sqr_mean', torch.zeros(num_features))
-        self.register_buffer('num_batches_tracked', torch.tensor(0, dtype=torch.long))
+        self.register_buffer('running_var', torch.zeros(num_features))
+        self.register_buffer('batch_sum', torch.zeros(num_features))
+        self.register_buffer('batch_sqr_sum', torch.zeros(num_features))
+        self.register_buffer('num_batches_tracked', torch.zeros(1))
         
         self.reset_parameters()
         
@@ -78,26 +111,50 @@ class ExpNorm1d(nn.Module):
             nn.init.ones_(self.weight)
             nn.init.zeros_(self.bias)
         nn.init.zeros_(self.running_mean)
-        nn.init.zeros_(self.running_sqr_mean)
-        self.num_batches_tracked.zero_()
+        nn.init.ones_(self.running_var)
+        nn.init.zeros_(self.batch_sum)
+        nn.init.zeros_(self.batch_sqr_sum)
+        nn.init.zeros_(self.num_batches_tracked)
+        self.gotcha = False
         
     def forward(self, x: torch.Tensor):
         assert len(x.shape)==2, "The input should be 1D feature, got dimension:{}".format(x.shape)
-        if self.training:
-            # Update the statistics
-            with torch.no_grad():
-                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * x
-                self.running_sqr_mean = (1 - self.momentum) * self.running_sqr_mean + self.momentum * x.square()
-                self.num_batches_tracked += 1
-                mean = self.running_mean
-                var = self.running_sqr_mean - self.running_mean.square()
-        else:
-            mean = self.running_mean
-            var = self.running_sqr_mean - self.running_mean.square()
+        with torch.no_grad():
+            if self.training:
+                # Update the batch statistics
+                if self.num_batches_tracked<self.batch_size:
+                    self.batch_sum += x.squeeze()
+                    self.batch_sqr_sum += x.square().squeeze()
+                    self.num_batches_tracked += 1
+                else:
+                    self.gotcha = True
+                    self.batch_sum = x.squeeze()
+                    self.batch_sqr_sum = x.square().squeeze()
+                    self.num_batches_tracked = torch.ones_like(self.num_batches_tracked)
+
+                mean_b = self.batch_sum/self.num_batches_tracked
+                sqr_b = self.batch_sqr_sum/self.num_batches_tracked
+                var_b = sqr_b - mean_b.square()
+
+                if self.num_batches_tracked==self.batch_size:
+                    # Update running statistic
+                    self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean_b if self.gotcha else\
+                                        mean_b
+                    self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var_b if self.gotcha else\
+                                        var_b
+                mean = self.running_mean if self.gotcha else mean_b
+                var = self.running_var if self.gotcha else var_b
+
+            else:
+                mean_b = self.batch_sum/self.num_batches_tracked if self.num_batches_tracked!=0 else torch.zeros_like(self.batch_sum).detach()
+                sqr_b = self.batch_sqr_sum/self.num_batches_tracked if self.num_batches_tracked!=0 else torch.ones_like(self.batch_sqr_sum).detach()
+                var_b = sqr_b - mean_b.square()
+                mean = self.running_mean if self.gotcha else mean_b
+                var = self.running_var if self.gotcha else var_b
         
-        x = (x - mean) / torch.sqrt(var + self.eps)
+        x = (x - mean.unsqueeze(0).detach()) / torch.sqrt(var.unsqueeze(0).detach() + self.eps)
         
         if self.affine:
-            x = x * self.weight + self.bias
+            x = x * self.weight.unsqueeze(0) + self.bias.unsqueeze(0)
         
         return x

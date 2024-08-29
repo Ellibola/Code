@@ -49,6 +49,14 @@ def main():
             process_list.append(
                 subprocess.Popen(['python', '-u', './normal_training.py', '-idx', str(idx), '-root', root_folder])
                 )
+        elif config_dict["TRAINING_TYPE"]=='ol_opt':
+            process_list.append(
+                subprocess.Popen(['python', '-u', './online_training_w_opt.py', '-idx', str(idx), '-root', root_folder])
+                )
+        elif config_dict["TRAINING_TYPE"]=='ol_plain':
+            process_list.append(
+                subprocess.Popen(['python', '-u', './online_training_plain.py', '-idx', str(idx), '-root', root_folder])
+                )
         else:
             raise NotImplementedError
 if __name__ == "__main__":
