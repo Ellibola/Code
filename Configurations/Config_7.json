@@ -1,9 +1,9 @@
 {   
-    "TRAINING_TYPE"           : "ol",
-    "MODEL_VER"               : "vgg11_exp",
+    "TRAINING_TYPE"           : "ol_plain",
+    "MODEL_VER"               : "vgg11",
     "LR"                      : 1e-4,
     "WEIGHT_DECAY"            : 1e-4,
-    "GPU_IDX"                 : 0,
+    "GPU_IDX"                 : 1,
     "OPT"                     : "adamw",
     "DATASET"                 : "cifar10",
     "OL_TYPE"                 : "exp3_jump_avg",

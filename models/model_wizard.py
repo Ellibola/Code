@@ -69,5 +69,16 @@ def model_wizard(
             return MobileNetV1_online_imagenet_V2().to(device)
         elif (bit_w==32)&(bit_a==32)&online&(version=='V3'):
             return MobileNetV1_online_imagenet_V3().to(device)
+    elif dataset=='cifar10':
+        if (bit_w==32)&(bit_a==32)&online&(version=='vgg11'):
+            return VGG_c10_online_plain().to(device)
+        if (bit_w==32)&(bit_a==32)&online&(version=='vgg11_ol'):
+            return VGG_c10_online().to(device)
+        if (bit_w==32)&(bit_a==32)&online&(version=='vgg11_exp'):
+            return VGG_c10_online_bn().to(device)
+        if (bit_w==32)&(bit_a==32)&(version=='vgg11'):
+            return VGG_c10_olnorm().to(device)
+        if (bit_w==32)&(bit_a==32)&(version=='vgg11_bn'):
+            return VGG_c10().to(device)
     else:
         raise NotImplementedError

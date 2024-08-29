@@ -50,6 +50,21 @@ def data_wizard(name:str, batch_size:int, val_par:float | None):
         ])
         train_set = TV.datasets.CIFAR100(root='./data/_cifar100', train=True, transform=train_trans, download=True)
         test_set = TV.datasets.CIFAR100(root='./data/_cifar100', train=False, transform=test_trans, download=True)
+    elif name=='cifar10':
+        train_trans = TV.transforms.Compose([
+            TV.transforms.RandomCrop(32, padding=4),
+            TV.transforms.RandomHorizontalFlip(),
+            TV.transforms.AutoAugment(TV.transforms.AutoAugmentPolicy.CIFAR10),
+            TV.transforms.ToTensor(),
+            TV.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+        ])
+        test_trans = TV.transforms.Compose([
+            TV.transforms.Resize(32),
+            TV.transforms.ToTensor(),
+            TV.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+        ])
+        train_set = TV.datasets.CIFAR10(root='./data/_cifar10', train=True, transform=train_trans, download=True)
+        test_set = TV.datasets.CIFAR10(root='./data/_cifar10', train=False, transform=test_trans, download=True)
     elif name=='caltech101':
         train_trans = TV.transforms.Compose([
             TV.transforms.Resize(300),
