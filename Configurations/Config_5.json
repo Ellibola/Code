@@ -3,7 +3,7 @@
     "MODEL_VER"               : "resnet50",
     "LR"                      : 1e-3,
     "WEIGHT_DECAY"            : 1e-5,
-    "GPU_IDX"                 : 1,
+    "GPU_IDX"                 : 0,
     "OPT"                     : "sgd",
     "DATASET"                 : "cifar100",
     "OL_TYPE"                 : "exp3_jump_avg",

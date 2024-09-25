@@ -7,7 +7,7 @@ class NN_Online(nn.Module):
     """
         Online deep learning framework based on EXP3 algorithm
     """
-    def __init__(self, explore_range=4, threshold=1e-2, patience=15) -> None:
+    def __init__(self, explore_range=4, threshold=1e-2, patience=120000) -> None:
         super(NN_Online, self).__init__()
         self.features, self.classifiers = self._module_compose()
         self.explor_range = explore_range
@@ -17,7 +17,7 @@ class NN_Online(nn.Module):
         self.uniform_alpha = self.alpha.data.clone().detach()
         self.uniform_alpha.requires_grad = False
         self.idx_start = 0
-        self.cool_down = 0
+        self.cool_down = 1
 
     def _module_compose(self)->list[list[nn.Module], list[nn.Module]]:
         raise NotImplementedError
@@ -100,7 +100,7 @@ class NN_Online(nn.Module):
                         self.alpha.data = self._prob_gen(self.alpha.data, self.idx_start-idx_old)
                         print("Now jump to:{}".format(self.idx_start))
                         self.alpha.alpha_acc = self.alpha.data.clone()
-                    self.cool_down += 1
+                        self.cool_down += 1
             else:
                 if not hasattr(self, 'loss'):
                     self.loss = crt
@@ -113,9 +113,10 @@ class NN_Online(nn.Module):
                     # Update the propabilities
                     # if self.idx_start-idx_old>0:
                         # self.alpha.data = self._prob_gen(self.alpha.data, self.idx_start-idx_old)
-                    self.alpha.data=self.uniform_alpha.clone()
-                    print("Now jump to:{}".format(self.idx_start))
-                    self.alpha.alpha_acc = self.alpha.data.clone()
+                    if self.idx_start-idx_old>0:
+                        self.alpha.data=self.uniform_alpha.clone()
+                        print("Now jump to:{}".format(self.idx_start))
+                        self.alpha.alpha_acc = self.alpha.data.clone()
                     self.cool_down += 1
         else:
             self.cool_down += 1

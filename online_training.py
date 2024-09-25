@@ -209,6 +209,9 @@ def main():
                 str(loss.item()), 
                 str(optimizer.param_groups[0]['lr']) if not config['OPT']=="ftrl" else None
             ])
+            if (('jump' in config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False))&\
+                   ((config['JUMP_CRT']=='loss' if 'JUMP_CRT' in config.keys() else False)):
+                    model.jump(loss.item(), 'loss')
             # Predicted accuracy per 20 steps
             c1, c5, n = correct_count(y, labels.to(DEVICE))
             c1_sum += c1
@@ -219,9 +222,9 @@ def main():
                 print('Current top5 acc: {:.3f}% \n'.format(c5_sum / n_sum * 100))
                 # Save the check_point
                 torch.save(model.state_dict(), args.root+os.sep+'model_checkpoint')
-                if (('jump' in config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False))&\
-                   ((config['JUMP_CRT']=='loss' if 'JUMP_CRT' in config.keys() else False)):
-                    model.jump(loss_accumulated/n_sum, 'loss')
+                # if (('jump' in config['OL_TYPE'] if 'OL_TYPE' in config.keys() else False))&\
+                #    ((config['JUMP_CRT']=='loss' if 'JUMP_CRT' in config.keys() else False)):
+                #     model.jump(loss_accumulated/n_sum, 'loss')
                 c1_sum = 0
                 c5_sum = 0
                 n_sum = 0
