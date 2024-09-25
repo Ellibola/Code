@@ -39,14 +39,16 @@ def data_wizard(name:str, batch_size:int, val_par:float | None):
         test_set = TV.datasets.MNIST(root='./data/_mnist', train=False, transform=test_trans, download=True)
     elif name=='cifar100':
         train_trans = TV.transforms.Compose([
-            TV.transforms.Resize(40),
-            TV.transforms.RandomCrop(32),
-            TV.transforms.RandomRotation(5),
-            TV.transforms.ToTensor()
+            TV.transforms.RandomCrop(32, padding=4),
+            TV.transforms.RandomHorizontalFlip(),
+            TV.transforms.RandomRotation(15),
+            TV.transforms.ToTensor(),
+            TV.transforms.Normalize((0.5070751592371323, 0.48654887331495095, 0.4409178433670343), (0.2673342858792401, 0.2564384629170883, 0.27615047132568404))
         ])
         test_trans = TV.transforms.Compose([
             TV.transforms.Resize(32),
-            TV.transforms.ToTensor()
+            TV.transforms.ToTensor(),
+            TV.transforms.Normalize((0.5070751592371323, 0.48654887331495095, 0.4409178433670343), (0.2673342858792401, 0.2564384629170883, 0.27615047132568404))
         ])
         train_set = TV.datasets.CIFAR100(root='./data/_cifar100', train=True, transform=train_trans, download=True)
         test_set = TV.datasets.CIFAR100(root='./data/_cifar100', train=False, transform=test_trans, download=True)
@@ -56,12 +58,12 @@ def data_wizard(name:str, batch_size:int, val_par:float | None):
             TV.transforms.RandomHorizontalFlip(),
             TV.transforms.AutoAugment(TV.transforms.AutoAugmentPolicy.CIFAR10),
             TV.transforms.ToTensor(),
-            TV.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+            TV.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         ])
         test_trans = TV.transforms.Compose([
             TV.transforms.Resize(32),
             TV.transforms.ToTensor(),
-            TV.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+            TV.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         ])
         train_set = TV.datasets.CIFAR10(root='./data/_cifar10', train=True, transform=train_trans, download=True)
         test_set = TV.datasets.CIFAR10(root='./data/_cifar10', train=False, transform=test_trans, download=True)
@@ -83,13 +85,17 @@ def data_wizard(name:str, batch_size:int, val_par:float | None):
         train_set, test_set = CustomDataset(train_set, train_trans), CustomDataset(test_set, test_trans)
     elif name=='imagenet':
         train_trans = TV.transforms.Compose([
+            TV.transforms.RandomResizedCrop(224),
+            TV.transforms.RandomHorizontalFlip(),
             TV.transforms.AutoAugment(TV.transforms.AutoAugmentPolicy.IMAGENET),
-            TV.transforms.Resize([224,224]),
-            TV.transforms.ToTensor()
+            TV.transforms.ToTensor(),
+            TV.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         test_trans = TV.transforms.Compose([
-            TV.transforms.Resize([224,224]),
-            TV.transforms.ToTensor()
+            TV.transforms.Resize(256),
+            TV.transforms.CenterCrop(224),
+            TV.transforms.ToTensor(),
+            TV.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         train_set = TV.datasets.ImageFolder(root="/dataset/imagenet/train", transform=train_trans)
         test_set = TV.datasets.ImageFolder(root="/dataset/imagenet/val", transform=test_trans)

@@ -19,7 +19,7 @@ class NN_Online(nn.Module):
     def forward(self, x:torch.Tensor):
         for module in self.features:
             x = module(x)
-        return self.classifiers[0](x)
+        return self.classifiers[-1](x)
     
     def step(self, x: torch.Tensor, target: torch.Tensor, optimizer: torch.optim.Optimizer):
         # Update trainable parameters

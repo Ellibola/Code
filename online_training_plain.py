@@ -171,7 +171,7 @@ def objective():
                 lr_sch.step()
         # Validate
         acc_t1, _ = validation_t1_t5(model, val_loader, DEVICE)
-        print("The accuracy:{} @ {} epoch.\n".format(acc_t1, epo))
+        print("The accuracy:{}% @ {} epoch.\n".format(acc_t1, epo))
     return model
 
 """ Main function """
