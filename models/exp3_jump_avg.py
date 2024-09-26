@@ -7,7 +7,7 @@ class NN_Online(nn.Module):
     """
         Online deep learning framework based on EXP3 algorithm
     """
-    def __init__(self, explore_range=4, threshold=1e-2, patience=120000) -> None:
+    def __init__(self, explore_range=4, threshold=1e-3, patience=60000) -> None:
         super(NN_Online, self).__init__()
         self.features, self.classifiers = self._module_compose()
         self.explor_range = explore_range
@@ -18,6 +18,7 @@ class NN_Online(nn.Module):
         self.uniform_alpha.requires_grad = False
         self.idx_start = 0
         self.cool_down = 1
+        self.current_idx = 0
 
     def _module_compose(self)->list[list[nn.Module], list[nn.Module]]:
         raise NotImplementedError
@@ -31,6 +32,7 @@ class NN_Online(nn.Module):
         # The input should be a batched 2D image
         assert len(x.shape)==4, "The input should be a batched 2D image"
         idx = torch.multinomial(self.alpha, 1, replacement=True).item() + self.idx_start
+        self.current_idx = idx
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
             x = module(x)
             if i==idx:
@@ -40,7 +42,8 @@ class NN_Online(nn.Module):
         # The input should be a batched 2D image
         assert len(x.shape)==4, "The input should be a batched 2D image"
         # Calculate the features and loss
-        idx = torch.multinomial(self.alpha*0.8+self.uniform_alpha.to(self.alpha.device)*0.2, 1, replacement=True).item() + self.idx_start
+        idx = torch.multinomial(self.alpha*(1-self.s)+self.uniform_alpha.to(self.alpha.device)*self.s, 1, replacement=True).item() + self.idx_start
+        self.current_idx = idx
         prediction_list = []
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
             if i<self.idx_start + self.explor_range:
@@ -68,13 +71,13 @@ class NN_Online(nn.Module):
         with torch.no_grad():
             assert len(self.alpha) == len(pred_list), "The length of alpha is not equal to that of the prediction list"
             for i, pred in enumerate(pred_list):
-                prob_biased = self.alpha.data*0.8+self.uniform_alpha.to(self.alpha.device)*0.2
+                prob_biased = self.alpha.data*(1-self.s)+self.uniform_alpha.to(self.alpha.device)*self.s
                 g = (F.cross_entropy(pred, target) / prob_biased[i]).item() if pred is not None else 0.0
                 assert (not math.isinf(g))&(not math.isnan(g)), "g not valid, with loss:{}, prob:{}, prediction:{}".format(F.cross_entropy(pred, target), prob_biased[i], pred)
                 if not hasattr(self.alpha, 'alpha_acc'):
                     self.alpha.alpha_acc = self.alpha.data.clone()
                 else:
-                    self.alpha.data = self.alpha.data * 0.5 + (1-0.5) * self.alpha.alpha_acc.to(self.alpha.device)
+                    self.alpha.data = self.alpha.data * 0.05 + (1-0.05) * self.alpha.alpha_acc.to(self.alpha.device)
                 self.alpha.alpha_acc[i] = self.alpha.alpha_acc[i] * (self.beta ** g)
                 # self.alpha.data[i]= self.alpha.data[i].item() * (self.beta ** g)
             # Setup a lower boundary for the alpha for the sake of numerical stability
@@ -105,24 +108,27 @@ class NN_Online(nn.Module):
                 if not hasattr(self, 'loss'):
                     self.loss = crt
                 if (self.loss*(1-self.threshould))>crt:
-                    alpha_sorted = self.alpha.data.sort(descending=True)[0]
+                    # alpha_sorted = self.alpha.data.sort(descending=True)[0]
                     idx_old = self.idx_start
-                    self.idx_start = torch.clamp(self.alpha.data.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item() if (alpha_sorted[0]/alpha_sorted[1])>3 else\
-                                     torch.clamp(torch.tensor(self.explor_range-1) + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
+                    # self.idx_start = torch.clamp(self.alpha.data.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item() if (alpha_sorted[0]/alpha_sorted[1])>3 else\
+                    #                  torch.clamp(torch.tensor(self.explor_range-1) + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
+                    # self.idx_start = torch.clamp(self.alpha.data.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
+                    self.idx_start = torch.clamp(torch.tensor([self.current_idx]), None, len(self.classifiers)-self.explor_range).item()
                     self.loss = crt
                     # Update the propabilities
-                    # if self.idx_start-idx_old>0:
-                        # self.alpha.data = self._prob_gen(self.alpha.data, self.idx_start-idx_old)
                     if self.idx_start-idx_old>0:
-                        self.alpha.data=self.uniform_alpha.clone()
+                        self.alpha.data = self._prob_gen(self.alpha.data, self.idx_start-idx_old)
+                    # if self.idx_start-idx_old>0:
+                    #     self.alpha.data=self.uniform_alpha.clone()
                         print("Now jump to:{}".format(self.idx_start))
                         self.alpha.alpha_acc = self.alpha.data.clone()
-                    self.cool_down += 1
+                        self.cool_down += 1
         else:
             self.cool_down += 1
     
     def _prob_gen(self, in_prob:torch.Tensor, idx:int)->torch.Tensor:
-        max_prob = in_prob[idx].item()
+        mixed_prob = in_prob * (1-self.s) + self.uniform_alpha.to(in_prob.device)*self.s
+        max_prob = mixed_prob[idx].item()
         out_prob = (1-max_prob)/(self.explor_range-1)*torch.ones_like(in_prob).detach()
         out_prob[0] = max_prob
         assert (out_prob.sum()-1.0).abs()<1e-4, "Outprob is not valid anymore:{}".format(out_prob)
