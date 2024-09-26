@@ -1,17 +1,21 @@
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 class NN_Online(nn.Module):
     """
         Online deep learning framework based on EXP3 algorithm
     """
-    def __init__(self) -> None:
+    def __init__(self, explore_range=4, threshold=1e-2, patience=15) -> None:
         super(NN_Online, self).__init__()
         self.features, self.classifiers = self._module_compose()
-        self.explor_range = 4
+        self.explor_range = explore_range
+        self.threshould=threshold
+        self.patience=patience
         self.alpha = nn.Parameter(torch.ones(self.explor_range) / (self.explor_range), requires_grad=False)
         self.uniform_alpha = self.alpha.data.clone().detach()
+        self.uniform_alpha.requires_grad = False
         self.idx_start = 0
         self.cool_down = 0
 
@@ -64,41 +68,61 @@ class NN_Online(nn.Module):
         with torch.no_grad():
             assert len(self.alpha) == len(pred_list), "The length of alpha is not equal to that of the prediction list"
             for i, pred in enumerate(pred_list):
-                g = F.cross_entropy(pred, target) / self.alpha.data[i] if pred is not None else 0.0
+                prob_biased = self.alpha.data*0.8+self.uniform_alpha.to(self.alpha.device)*0.2
+                g = (F.cross_entropy(pred, target) / prob_biased[i]).item() if pred is not None else 0.0
+                assert (not math.isinf(g))&(not math.isnan(g)), "g not valid, with loss:{}, prob:{}, prediction:{}".format(F.cross_entropy(pred, target), prob_biased[i], pred)
                 if not hasattr(self.alpha, 'alpha_acc'):
-                    self.alpha.alpha_acc = self.alpha.data
+                    self.alpha.alpha_acc = self.alpha.data.clone()
                 else:
-                    self.alpha.data = self.alpha.data * 0.99 + (1-0.01) * self.alpha.alpha_acc.to(self.alpha.device)
+                    self.alpha.data = self.alpha.data * 0.5 + (1-0.5) * self.alpha.alpha_acc.to(self.alpha.device)
                 self.alpha.alpha_acc[i] = self.alpha.alpha_acc[i] * (self.beta ** g)
+                # self.alpha.data[i]= self.alpha.data[i].item() * (self.beta ** g)
             # Setup a lower boundary for the alpha for the sake of numerical stability
             self.alpha.data = torch.clamp(self.alpha.data, 1e-8, None)
             self.alpha.alpha_acc = torch.clamp(self.alpha.alpha_acc, 1e-8, None)
             # Normalize the alpha
             self.alpha.data = self.alpha.data.div(self.alpha.data.sum())
             self.alpha.alpha_acc = self.alpha.alpha_acc.div(self.alpha.alpha_acc.sum())
-        assert self.alpha.sum()-1.0<1e-4, "Alpha is not valid anymore:{}, sum up to:{}".format(self.alpha, self.alpha.sum())
         
     def jump(self, crt, crt_type='val_acc'):
-        self.cool_down += 1
-        if self.cool_down % 15==0:
+        if self.cool_down % self.patience==0:
             if crt_type=='val_acc':
                 if not hasattr(self, 'val_acc'):
                     self.val_acc = crt
-                if self.val_acc<crt:
-                    self.idx_start = torch.clamp(self.alpha.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
-                    print("Now jump to:{}".format(self.idx_start))
-                    self.val_acc = crt
-                    # Reset the propabilities
-                    self.alpha.data = self.uniform_alpha
+                if (self.val_acc*(1+self.threshould))<crt:
+                    alpha_sorted = self.alpha.data.sort(descending=True)[0]
+                    idx_old = self.idx_start
+                    self.idx_start = torch.clamp(self.alpha.data.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item() if (alpha_sorted[0]/alpha_sorted[1])>3 else\
+                                     torch.clamp(torch.tensor(self.explor_range-1) + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
+                    self.loss = crt
+                    # Update the propabilities
+                    if self.idx_start-idx_old>0:
+                        self.alpha.data = self._prob_gen(self.alpha.data, self.idx_start-idx_old)
+                        print("Now jump to:{}".format(self.idx_start))
+                        self.alpha.alpha_acc = self.alpha.data.clone()
+                    self.cool_down += 1
             else:
                 if not hasattr(self, 'loss'):
                     self.loss = crt
-                if (self.loss*(1-1e-3))>crt:
-                    alpha_sorted = self.alpha.sort(descending=True)[0]
-                    self.idx_start = torch.clamp(self.alpha.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item() if (alpha_sorted[0]/alpha_sorted[1])>3 else\
-                                     torch.clamp(torch.tensor(self.explor_range) + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
-                    print("Now jump to:{}".format(self.idx_start))
+                if (self.loss*(1-self.threshould))>crt:
+                    alpha_sorted = self.alpha.data.sort(descending=True)[0]
+                    idx_old = self.idx_start
+                    self.idx_start = torch.clamp(self.alpha.data.argmax() + self.idx_start, None, len(self.classifiers)-self.explor_range).item() if (alpha_sorted[0]/alpha_sorted[1])>3 else\
+                                     torch.clamp(torch.tensor(self.explor_range-1) + self.idx_start, None, len(self.classifiers)-self.explor_range).item()
                     self.loss = crt
-                    # Reset the propabilities
-                    self.alpha.data = self.uniform_alpha
-                    self.alpha.alpha_acc = self.uniform_alpha
+                    # Update the propabilities
+                    # if self.idx_start-idx_old>0:
+                        # self.alpha.data = self._prob_gen(self.alpha.data, self.idx_start-idx_old)
+                    self.alpha.data=self.uniform_alpha.clone()
+                    print("Now jump to:{}".format(self.idx_start))
+                    self.alpha.alpha_acc = self.alpha.data.clone()
+                    self.cool_down += 1
+        else:
+            self.cool_down += 1
+    
+    def _prob_gen(self, in_prob:torch.Tensor, idx:int)->torch.Tensor:
+        max_prob = in_prob[idx].item()
+        out_prob = (1-max_prob)/(self.explor_range-1)*torch.ones_like(in_prob).detach()
+        out_prob[0] = max_prob
+        assert (out_prob.sum()-1.0).abs()<1e-4, "Outprob is not valid anymore:{}".format(out_prob)
+        return out_prob
