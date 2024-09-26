@@ -7,6 +7,8 @@ from models.MobileNet import *
 from models.MobileNet_Online import *
 from models.VGG import *
 from models.VGG_online import *
+from models.resnet import resnet
+from models.resnet_online import resnet_ol
 
 def model_wizard(
         dataset:str="mnist", 
@@ -17,6 +19,8 @@ def model_wizard(
         online=True,
         **kwargs
     ):
+    if 'ol_type' not in kwargs.keys():
+        kwargs['ol_type'] = 'plain_ol'
     if dataset=='mnist':
         if (bit_w==32)&(bit_a==32)&(version=='V1')&online:
             return CNN_online_MNIST_V1().to(device)
@@ -55,6 +59,16 @@ def model_wizard(
             return VGG_c100_Quant(bit_w=bit_w, bit_a=bit_a).to(device)
         elif ((bit_w in [2, 4, 8, 16])|(bit_a in [2, 4, 8, 16]))&(version=='V1'):
             return MobileNetV1_c100_Quant(bit_w=bit_w, bit_a=bit_a).to(device)
+        elif (bit_w==32)&(bit_a==32)&('resnet' in version)&online:
+            n_layer = int(version.replace('resnet',''))
+            return resnet_ol('cifar100',device,n_layer,kwargs['ol_type'])
+        elif (bit_w==32)&(bit_a==32)&('resnet' in version):
+            if ('in' in version):
+                n_layer = int(version.replace('inresnet',''))
+                return resnet('cifar100', device, n_layer, bit_w=32, bit_a=32, norm='in')
+            else:
+                n_layer = int(version.replace('resnet',''))
+                return resnet('cifar100', device, n_layer, bit_w=32, bit_a=32)
     elif dataset=='caltech101':
         if (bit_w==32)&(bit_a==32)&online:
             raise NotImplementedError
@@ -69,6 +83,9 @@ def model_wizard(
             return MobileNetV1_online_imagenet_V2().to(device)
         elif (bit_w==32)&(bit_a==32)&online&(version=='V3'):
             return MobileNetV1_online_imagenet_V3().to(device)
+        elif (bit_w==32)&(bit_a==32)&online&('resnet' in version):
+            n_layer = int(version.replace('resnet',''))
+            return resnet_ol('imagenet',device,n_layer,kwargs['ol_type'])
     elif dataset=='cifar10':
         if (bit_w==32)&(bit_a==32)&online&(version=='vgg11'):
             return VGG_c10_online_plain().to(device)
@@ -80,5 +97,16 @@ def model_wizard(
             return VGG_c10_olnorm().to(device)
         if (bit_w==32)&(bit_a==32)&(version=='vgg11_bn'):
             return VGG_c10().to(device)
+        if (bit_w==32)&(bit_a==32)&online&('resnet' in version):
+            n_layer = int(version.replace('resnet',''))
+            return resnet_ol('cifar10', device, n_layer, kwargs['ol_type'])
+        if (bit_w==32)&(bit_a==32)&('resnet' in version):
+            if 'inresnet' in version:
+                n_layer = int(version.replace('inresnet',''))
+                norm = 'in'
+            else:
+                n_layer = int(version.replace('resnet',''))
+                norm = 'bn'
+            return resnet('cifar10', device, n_layer, 32, 32, norm)
     else:
         raise NotImplementedError

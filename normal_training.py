@@ -127,13 +127,14 @@ def main():
     train_loader, test_loader, val_loader = get_dataset()
     # Learning rate scheduler
     itr_total = config['NUM_EPOCH'] * len(train_loader)
-    lr_sch = GradualWarmupScheduler(
-        optimizer=optimizer, 
-        max_iter=itr_total, 
-        min_lr=0, 
-        base_lr=config['LR'], 
-        warmup_lr=50*config['LR'], 
-        warmup_steps=0.01*itr_total
+    # lr_sch = torch.optim.lr_scheduler.CosineAnnealingLR(
+    #     optimizer=optimizer,
+    #     T_max=itr_total
+    # ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
+    lr_sch = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer=optimizer,
+        milestones=[60,120,160],
+        gamma=1/5
     ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
     # Main training loop
     print("Training start, the model has {} parameters.\n\n".format(para_count(model)))
@@ -162,7 +163,7 @@ def main():
             count += 1
             total_count += 1
             # Classic pytorch pipeline
-            with torch.autograd.set_detect_anomaly(False):
+            with torch.autograd.set_detect_anomaly(True):
                 model.train()
                 optimizer.zero_grad()
                 y = model(images.to(DEVICE))
@@ -194,8 +195,10 @@ def main():
                    (type(layer).__name__ == 'BLinear') | \
                    (type(layer).__name__ == 'BConv2d_first'):
                     layer.weight.data.copy_(torch.clamp(layer.weight.data.detach(), -1, 1))
-            if lr_sch is not None:
-                lr_sch.step()
+            # if lr_sch is not None:
+            #     lr_sch.step()
+        if lr_sch is not None:
+            lr_sch.step()
     # Test model accuracy on the test set after training
     acc_t1, acc_t5 = validation_t1_t5(model, test_loader, DEVICE)
     validated_acc.append([str(acc_t1), str(acc_t5)])

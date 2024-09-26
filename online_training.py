@@ -64,7 +64,7 @@ else:
 
 
 """ Create model, optimizer, criterion"""
-def get_pytorch_obj():
+def get_pytorch_obj(train_length:int):
     model = model_wizard(
         dataset=config['DATASET'],
         bit_w=config['W_BIT'] if 'W_BIT' in config.keys() else 32,
@@ -72,7 +72,8 @@ def get_pytorch_obj():
         version=config['MODEL_VER'],
         device=DEVICE,
         if_avg=config['IF_PARAM_AVG'] if 'IF_PARAM_AVG' in config.keys() else False,
-        gamma=config['GAMMA'] if 'GAMMA' in config.keys() else 0.99
+        gamma=config['GAMMA'] if 'GAMMA' in config.keys() else 0.99,
+        ol_type=config['OL_TYPE']
     ).to(DEVICE)
     # Set the hyper parameter of the online CNN
     model.set_hyper_params(
@@ -123,7 +124,12 @@ def get_pytorch_obj():
             lr=config['LR'],
             momentum=0.9
         )
-    return model, optimizer
+    # LR scheduler
+    lr_sch = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer=optimizer,
+        T_max=config['NUM_EPOCH']*train_length
+    ) if config['IF_LR_SCH'] else None
+    return model, optimizer, lr_sch
 
 """ Dataset """
 def get_dataset():
@@ -156,25 +162,15 @@ def save2file(model, if_val, val_acc, loss_list):
 def main():
     validated_acc = []
     loss_list = []
+    # Get datasets
+    train_loader, test_loader, val_loader = get_dataset()
     # Get pytorch objs
-    model, optimizer = get_pytorch_obj()
+    model, optimizer, lr_sch = get_pytorch_obj(len(train_loader))
     print("The model to be trained is:{}".format(model.__class__.__name__))
     # Load the saved state:
     if ("CONTINUE_FROM_SAVED" in config.keys()) and \
        ("ROOT_TO_SAVED" in config.keys()) and config["CONTINUE_FROM_SAVED"]:
         model.load_state_dict(torch.load(config["ROOT_TO_SAVED"], map_location=DEVICE))
-    # Get datasets
-    train_loader, test_loader, val_loader = get_dataset()
-    # Learning rate scheduler
-    itr_total = config['NUM_EPOCH'] * len(train_loader)
-    lr_sch = GradualWarmupScheduler(
-        optimizer=optimizer, 
-        max_iter=itr_total, 
-        min_lr=0, 
-        base_lr=config['LR'], 
-        warmup_lr=50*config['LR'], 
-        warmup_steps=0.01*itr_total
-    ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
     # Main training loop
     print("Training start, the model has {} parameters.\n\n".format(para_count(model)))
     # Total step count

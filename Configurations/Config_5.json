@@ -1,5 +1,6 @@
 {   
     "TRAINING_TYPE"           : "ol",
+<<<<<<< HEAD
     "MODEL_VER"               : "vgg11_ol",
     "LR"                      : 1e-4,
     "WEIGHT_DECAY"            : 1e-5,
@@ -7,11 +8,24 @@
     "OPT"                     : "sgd",
     "DATASET"                 : "cifar10",
     "OL_TYPE"                 : "plain_ol",
+=======
+    "MODEL_VER"               : "resnet50",
+    "LR"                      : 1e-3,
+    "WEIGHT_DECAY"            : 1e-5,
+    "GPU_IDX"                 : 1,
+    "OPT"                     : "sgd",
+    "DATASET"                 : "cifar100",
+    "OL_TYPE"                 : "exp3_jump_avg",
+>>>>>>> a0854aa3a664d0fd62e3ec18e8e149add4d3035f
     "JUMP_CRT"                : "loss",
     "IF_OBC"                  : 1,
     "OBC_ETA"                 : 0.99,
     "BATCH_SIZE"              : 1,
     "NUM_EPOCH"               : 200,
+<<<<<<< HEAD
+=======
+    "IF_LR_SCH"               : 1,
+>>>>>>> a0854aa3a664d0fd62e3ec18e8e149add4d3035f
     "W_BIT"                   : 32,
     "A_BIT"                   : 32,
     "VAL_PAR"                 : 0.1,

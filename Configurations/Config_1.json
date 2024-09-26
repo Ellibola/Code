@@ -1,17 +1,17 @@
 {   
     "TRAINING_TYPE"           : "normal",
-    "MODEL_VER"               : "vgg11",
-    "LR"                      : 1e-3,
-    "WEIGHT_DECAY"            : 1e-4,
+    "MODEL_VER"               : "resnet50",
+    "LR"                      : 1e-1,
+    "WEIGHT_DECAY"            : 5e-4,
     "IF_LR_SCH"               : 1,
     "GPU_IDX"                 : 1,
     "OPT"                     : "sgd",
-    "DATASET"                 : "cifar10",
-    "BATCH_SIZE"              : 200,
+    "DATASET"                 : "cifar100",
+    "BATCH_SIZE"              : 128,
     "NUM_EPOCH"               : 200,
     "W_BIT"                   : 32,
     "A_BIT"                   : 32,
-    "VAL_PAR"                 : 0.1,
+    "VAL_PAR"                 : 0.01,
     "IF_VAL"                  : 1,
     "IF_INSNORM"              : 0
   }

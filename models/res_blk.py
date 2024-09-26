@@ -12,38 +12,39 @@ from models.quant_basic import *
     Full precision blocks
 """
 class BottleNeckBlock(nn.Module):
-    def __init__(self, in_channel: int, out_channel: int, neck_reduction=4) -> None:
+    def __init__(self, in_channel: int, out_channel: int, neck_reduction=4, norm_2d=nn.BatchNorm2d) -> None:
         super(BottleNeckBlock, self).__init__()
         self.in_channel = in_channel
         self.out_channel = out_channel
         self.neck_reduction = neck_reduction
+        self.norm_2d = norm_2d
         self.neck_channel = int(self.out_channel/neck_reduction)
         if self.in_channel!=self.out_channel:
             self.proj = nn.Sequential(
                 nn.Conv2d(in_channels=in_channel, out_channels=self.out_channel, kernel_size=1, stride=2, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True)
+                self.norm_2d(self.out_channel, affine=True)
             )
             self.layers = nn.Sequential(
                 nn.Conv2d(in_channels=in_channel, out_channels=self.neck_channel, kernel_size=1, bias=False),
-                nn.BatchNorm2d(self.neck_channel, affine=True),
+                self.norm_2d(self.neck_channel, affine=True),
                 nn.ReLU(),
                 nn.Conv2d(in_channels=self.neck_channel, out_channels=self.neck_channel, kernel_size=3, stride=2, padding=1, bias=False),
-                nn.BatchNorm2d(self.neck_channel, affine=True),
+                self.norm_2d(self.neck_channel, affine=True),
                 nn.ReLU(),
                 nn.Conv2d(in_channels=self.neck_channel, out_channels=self.out_channel, kernel_size=1, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True)
+                self.norm_2d(self.out_channel, affine=True)
             )
         else:
             self.proj = lambda x: x
             self.layers = nn.Sequential(
                 nn.Conv2d(in_channels=in_channel, out_channels=self.neck_channel, kernel_size=1, bias=False),
-                nn.BatchNorm2d(self.neck_channel, affine=True),
+                self.norm_2d(self.neck_channel, affine=True),
                 nn.ReLU(),
                 nn.Conv2d(in_channels=self.neck_channel, out_channels=self.neck_channel, kernel_size=3, padding=1, bias=False),
-                nn.BatchNorm2d(self.neck_channel, affine=True),
+                self.norm_2d(self.neck_channel, affine=True),
                 nn.ReLU(),
                 nn.Conv2d(in_channels=self.neck_channel, out_channels=self.out_channel, kernel_size=1, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True)
+                self.norm_2d(self.out_channel, affine=True)
             )
     
     def forward(self, x: torch.Tensor):
@@ -53,30 +54,31 @@ class BottleNeckBlock(nn.Module):
         return x+x_
     
 class BasicBlock(nn.Module):
-    def __init__(self, in_channel: int, out_channel: int) -> None:
+    def __init__(self, in_channel: int, out_channel: int, norm_2d=nn.BatchNorm2d) -> None:
         super(BasicBlock, self).__init__()
         self.in_channel = in_channel
         self.out_channel = out_channel
+        self.norm_2d = norm_2d
         if self.in_channel!=self.out_channel:
             self.proj = nn.Sequential(
                 nn.Conv2d(in_channels=in_channel, out_channels=self.out_channel, kernel_size=1, stride=2, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True)
+                self.norm_2d(self.out_channel, affine=True)
             )
             self.layers = nn.Sequential(
                 nn.Conv2d(in_channels=in_channel, out_channels=self.out_channel, kernel_size=3, stride=2, padding=1, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True),
+                self.norm_2d(self.out_channel, affine=True),
                 nn.ReLU(),
                 nn.Conv2d(in_channels=self.out_channel, out_channels=self.out_channel, kernel_size=3, padding=1, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True)
+                self.norm_2d(self.out_channel, affine=True)
             )
         else:
             self.proj = lambda x: x
             self.layers = nn.Sequential(
                 nn.Conv2d(in_channels=in_channel, out_channels=self.out_channel, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True),
+                self.norm_2d(self.out_channel, affine=True),
                 nn.ReLU(),
                 nn.Conv2d(in_channels=self.out_channel, out_channels=self.out_channel, kernel_size=3, padding=1, bias=False),
-                nn.BatchNorm2d(self.out_channel, affine=True)
+                self.norm_2d(self.out_channel, affine=True)
             )
     def forward(self, x: torch.Tensor):
         x_ = x.clone()
