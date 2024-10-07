@@ -7,7 +7,7 @@ class NN_Online(nn.Module):
     """
         Online deep learning framework based on EXP3 algorithm
     """
-    def __init__(self, explore_range=4, threshold=1e-3, patience=60000) -> None:
+    def __init__(self, explore_range=4, threshold=0, patience=60000) -> None:
         super(NN_Online, self).__init__()
         self.features, self.classifiers = self._module_compose()
         self.explor_range = explore_range
@@ -42,7 +42,8 @@ class NN_Online(nn.Module):
         # The input should be a batched 2D image
         assert len(x.shape)==4, "The input should be a batched 2D image"
         # Calculate the features and loss
-        idx = torch.multinomial(self.alpha*(1-self.s)+self.uniform_alpha.to(self.alpha.device)*self.s, 1, replacement=True).item() + self.idx_start
+        # idx = torch.multinomial(self.alpha*(1-self.s)+self.uniform_alpha.to(self.alpha.device)*self.s, 1, replacement=True).item() + self.idx_start
+        idx = torch.multinomial(self.alpha, 1, replacement=True).item() + self.idx_start
         self.current_idx = idx
         prediction_list = []
         for i, (module, classifier) in enumerate(zip(self.features, self.classifiers)):
@@ -71,7 +72,8 @@ class NN_Online(nn.Module):
         with torch.no_grad():
             assert len(self.alpha) == len(pred_list), "The length of alpha is not equal to that of the prediction list"
             for i, pred in enumerate(pred_list):
-                prob_biased = self.alpha.data*(1-self.s)+self.uniform_alpha.to(self.alpha.device)*self.s
+                # prob_biased = self.alpha.data*(1-self.s)+self.uniform_alpha.to(self.alpha.device)*self.s
+                prob_biased = self.alpha.data
                 g = (F.cross_entropy(pred, target) / prob_biased[i]).item() if pred is not None else 0.0
                 assert (not math.isinf(g))&(not math.isnan(g)), "g not valid, with loss:{}, prob:{}, prediction:{}".format(F.cross_entropy(pred, target), prob_biased[i], pred)
                 if not hasattr(self.alpha, 'alpha_acc'):
@@ -83,6 +85,8 @@ class NN_Online(nn.Module):
             # Setup a lower boundary for the alpha for the sake of numerical stability
             self.alpha.data = torch.clamp(self.alpha.data, 1e-8, None)
             self.alpha.alpha_acc = torch.clamp(self.alpha.alpha_acc, 1e-8, None)
+            # Proxy of the probability
+            self.alpha.alpha_acc = self.alpha.alpha_acc * (1-self.s) + self.uniform_alpha.to(self.alpha.device)*self.s
             # Normalize the alpha
             self.alpha.data = self.alpha.data.div(self.alpha.data.sum())
             self.alpha.alpha_acc = self.alpha.alpha_acc.div(self.alpha.alpha_acc.sum())

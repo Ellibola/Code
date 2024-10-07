@@ -69,6 +69,7 @@ def get_pytorch_obj():
     ).to(DEVICE)
     # Setting up parameter groups and weight decay
     weight_decay = config['WEIGHT_DECAY'] if 'WEIGHT_DECAY' in config.keys() else 0.0
+    momentum = config['SGD_MOMENTUM'] if 'SGD_MOMENTUM' in config.keys() else 0.9
     param_group = get_para_group(model, weight_decay) if weight_decay!=0 else model.parameters()
     optimizer = \
         opt.AdamW(
@@ -80,7 +81,7 @@ def get_pytorch_obj():
         opt.SGD(
             params=param_group,
             lr=config['LR'],
-            momentum=0.9,
+            momentum=momentum,
             weight_decay=weight_decay
         )
     return model, optimizer
@@ -127,15 +128,15 @@ def main():
     train_loader, test_loader, val_loader = get_dataset()
     # Learning rate scheduler
     itr_total = config['NUM_EPOCH'] * len(train_loader)
-    # lr_sch = torch.optim.lr_scheduler.CosineAnnealingLR(
-    #     optimizer=optimizer,
-    #     T_max=itr_total
-    # ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
-    lr_sch = torch.optim.lr_scheduler.MultiStepLR(
+    lr_sch = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer=optimizer,
-        milestones=[60,120,160],
-        gamma=1/5
+        T_max=itr_total
     ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
+    # lr_sch = torch.optim.lr_scheduler.MultiStepLR(
+    #     optimizer=optimizer,
+    #     milestones=[60,120,160],
+    #     gamma=1/5
+    # ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
     # Main training loop
     print("Training start, the model has {} parameters.\n\n".format(para_count(model)))
     # Total step count
@@ -195,10 +196,10 @@ def main():
                    (type(layer).__name__ == 'BLinear') | \
                    (type(layer).__name__ == 'BConv2d_first'):
                     layer.weight.data.copy_(torch.clamp(layer.weight.data.detach(), -1, 1))
-            # if lr_sch is not None:
-            #     lr_sch.step()
-        if lr_sch is not None:
-            lr_sch.step()
+            if lr_sch is not None:
+                lr_sch.step()
+        # if lr_sch is not None:
+        #     lr_sch.step()
     # Test model accuracy on the test set after training
     acc_t1, acc_t5 = validation_t1_t5(model, test_loader, DEVICE)
     validated_acc.append([str(acc_t1), str(acc_t5)])

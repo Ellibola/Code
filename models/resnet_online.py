@@ -26,6 +26,8 @@ def get_online_resnet(ol_type):
         from models.exp3_jump_avg import NN_Online
     elif ol_type=='plain_ol':
         from models.plain_ol import NN_Online
+    elif ol_type=='exp3_new_jump':
+        from models.exp3_new_jump import NN_Online
     else:
         raise NotImplementedError
     class ResNet_ol(NN_Online):

@@ -66,7 +66,7 @@ else:
 
 
 """ Create model, optimizer, criterion"""
-def get_pytorch_obj():
+def get_pytorch_obj(train_length:int):
     model = model_wizard(
         dataset=config['DATASET'],
         bit_w=config['W_BIT'] if 'W_BIT' in config.keys() else 32,
@@ -86,6 +86,7 @@ def get_pytorch_obj():
     param_group = get_para_group(model, weight_decay) if weight_decay!=0 else model.parameters()
     # If we need to use OBC or not
     lr = config['LR']
+    momentum = config['SGD_MOMENTUM'] if 'SGD_MOMENTUM' in config.keys() else 0.9
     if (config['IF_OBC'] if 'IF_OBC' in config.keys() else False):
         optimizer = \
         OBC(
@@ -107,7 +108,7 @@ def get_pytorch_obj():
             base_optimizer_class=opt.SGD,
             eta=config['OBC_ETA'] if 'OBC_ETA' in config.keys() else 0.99,
             lr=lr,
-            momentum=0.9
+            momentum=momentum
         )
     else:
         optimizer = \
@@ -124,19 +125,16 @@ def get_pytorch_obj():
         opt.SGD(
             params=param_group,
             lr=lr,
-            momentum=0.9
+            momentum=momentum
         )
     # Learning rate scheduler
     train_loader, _, _ = get_dataset()
     itr_total = config['NUM_EPOCH'] * len(train_loader)
-    lr_sch = GradualWarmupScheduler(
-        optimizer=optimizer, 
-        max_iter=itr_total, 
-        min_lr=0, 
-        base_lr=config['LR'], 
-        warmup_lr=50*config['LR'], 
-        warmup_steps=0.01*itr_total
-    ) if (config['IF_LR_SCH'] if 'IF_LR_SCH' in config.keys() else False) else None
+    # LR scheduler
+    lr_sch = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer=optimizer,
+        T_max=config['NUM_EPOCH']*train_length
+    ) if config['IF_LR_SCH'] else None
 
     return model, optimizer, lr_sch
 
@@ -157,10 +155,10 @@ def save2file(model):
 
 """ Objective, the training pipeline """
 def objective():
-    # Get pytorch objs
-    model, optimizer, lr_sch = get_pytorch_obj()
     # Get datasets
-    train_loader, _, val_loader = get_dataset()
+    train_loader, val_loader, _ = get_dataset()
+    # Get pytorch objs
+    model, optimizer, lr_sch = get_pytorch_obj(len(train_loader))
     for epo in range(config['NUM_EPOCH']):
         # Training
         for images, labels in train_loader:

@@ -82,6 +82,7 @@ def get_pytorch_obj(train_length:int):
     )
     # Setting up parameter groups and weight decay
     weight_decay = config['WEIGHT_DECAY'] if 'WEIGHT_DECAY' in config.keys() else 0.0
+    momentum = config['SGD_MOMENTUM'] if 'SGD_MOMENTUM' in config.keys() else 0.9
     param_group = get_para_group(model, weight_decay) if weight_decay!=0 else model.parameters()
     # If we need to use OBC or not
     if (config['IF_OBC'] if 'IF_OBC' in config.keys() else False):
@@ -105,7 +106,7 @@ def get_pytorch_obj(train_length:int):
             base_optimizer_class=opt.SGD,
             eta=config['OBC_ETA'] if 'OBC_ETA' in config.keys() else 0.99,
             lr=config['LR'],
-            momentum=0.9
+            momentum=momentum
         )
     else:
         optimizer = \
@@ -122,7 +123,7 @@ def get_pytorch_obj(train_length:int):
         opt.SGD(
             params=param_group,
             lr=config['LR'],
-            momentum=0.9
+            momentum=momentum
         )
     # LR scheduler
     lr_sch = torch.optim.lr_scheduler.CosineAnnealingLR(
